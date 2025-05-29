@@ -1,1 +1,1 @@
-# myosin_dups
+# Myosin duplication project

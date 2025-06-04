@@ -6,7 +6,7 @@
 #SBATCH --account=kingsley
 
 # Run with:
-# sbatch 01_canu_assembly.sh <input.fastq> <base>
+# sbatch hicanu.sh <input.fastq> <base>
 
 INPUT_FASTQ=$1
 BASE=$2

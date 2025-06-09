@@ -12,5 +12,5 @@ POS=$1    #Ex: chrXIX:2416650-2916650
 BAM=$2
 FASTA=$3
 
-# Extract reads from region of interest
-samtools view -u $BAM $POS | samtools fasta -0 $FASTA -
+# Extract reads from region of interest (primary read alignments only)
+samtools view -F 256 -u $BAM $POS | samtools fasta -0 $FASTA -

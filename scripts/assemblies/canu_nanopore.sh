@@ -14,4 +14,4 @@ BASE=$3
 SIZE=$4
 
 # Run hicanu
-canu -p $BASE -d ${DIR}/${BASE} gridOptions='--account=kingsley --time=2-0:00:00' genomeSize=${SIZE}  cnsMemory=20 -nanopore $INPUT_FASTQ
+canu -p $BASE -d ${DIR}/${BASE} gridOptions='--account=kingsley --time=2-0:00:00' genomeSize=${SIZE}  cnsMemory=20 gridOptionsOVS="--mem-per-cpu=64g" -nanopore $INPUT_FASTQ

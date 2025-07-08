@@ -1,0 +1,26 @@
+# File paths
+outdir: /labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/depth_simulations/206_genomes            # Path to output directory
+ref_align: /labs/kingsley/ambenj/ref_genomes/Nath2020_sticklebackv5/stickleback_v5_assembly_MYH3C4dup_hardmasked_noChrY.fa     # Reference to align reads to
+
+# Simulation parameters for paired end simulation
+depth: [4]                          # List of read depths to simulate
+reps: 1                             # Number of replicates to simulate
+read_length: 76                     # Read length
+frag_mean: 150                      # Mean fragment size
+frag_sd: 50                         # Fragment standard deviation
+ref_sim_path: /labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/depth_simulations            # Path to folder with fastas for simulation
+ref_sim: # Reference files to simulate reads from
+  - Duke_GAcu_1.0-RABS-3copy.female.fa
+  - Duke_GAcu_1.0-SALR-3copy.female.fa
+  - stickleback_v5-BOULxBDGB-4copy.female.fa
+  - stickleback_v5-fGasAcu3-4copy.female.fa
+  - stickleback_v5-BEPA_XAB031-5copy.female.fa
+  - stickleback_v5-CMCB21_08-5copy.female.fa
+  - stickleback_v5-DNSE21_15-5copy.female.fa
+  - stickleback_v5-ECHO21_44-5copy.female.fa
+  - stickleback_v5-JADE21_11-5copy.female.fa
+  - stickleback_v5-KFSY21_29-5copy.female.fa
+  - stickleback_v5-BLAU22_12-6copy.female.fa
+
+# Depth calculation
+regions: /labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/stickleback_v5_ncbi_myosin_annotations_noChrY.bed

@@ -1,0 +1,224 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+# Load packages
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(readr)
+library(patchwork)
+library(fuzzyjoin)
+```
+
+```{r fig.width=8, fig.height=3}
+
+
+# --- USER INPUT ---
+ref_name <- "BEPA-C3a"
+input_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/all_protein_FSmod_mafft_aligndivergent_sites.tsv"
+#input_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/divergent_sites.tsv"
+domains_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/BEPA_XAB031_MYH3C3a_domains.txt"
+group_names <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/group_names.txt"
+out_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/all_protein_FSmod_mafft_aligndivergent_sites_figure.pdf"
+
+
+# Define protein domains (relative to full protein)
+domain_df <- read_tsv(domains_file) %>% 
+  mutate(TileColor = case_when(
+    Domain == "SH3" ~ "#a6cee3",
+    Domain == "Myosin motor" ~ "#1f78b4",
+    Domain == "IQ motif" ~ "#b2df8a",
+    Domain == "Myosin tail" ~ "#33a02c",
+    TRUE ~ NA_character_
+  ))
+
+protein_length <- 1931  # total protein length
+
+# === Load and preprocess divergent positions ===
+divergent_df <- read_tsv(input_file)
+
+long_df <- divergent_df %>%
+  pivot_longer(-Position, names_to = "Sequence", values_to = "AminoAcid") %>%
+  mutate(Position = as.integer(Position))  # convert early
+
+# Reference amino acids
+ref_df <- long_df %>%
+  filter(Sequence == ref_name) %>%
+  select(Position, RefAminoAcid = AminoAcid) %>%
+  mutate(Position = as.integer(Position))
+
+# Identify and group identical sequences (except reference)
+comparison_df <- long_df %>%
+  filter(Sequence != ref_name) %>%
+  left_join(ref_df, by = "Position") %>%
+  mutate(Diff = AminoAcid != RefAminoAcid) %>%
+  group_by(Sequence) %>%
+  summarize(Profile = paste(ifelse(Diff, AminoAcid, "."), collapse = "|"),
+            DiffCount = sum(Diff), 
+            .groups = "drop") %>%
+  group_by(Profile) %>%
+  mutate(GroupSize = n(),
+         GroupLabel = ifelse(GroupSize > 1,
+                             paste0(first(Sequence), " (n=", GroupSize, ")"),
+                             Sequence),
+         seq_names = paste(unique(Sequence), collapse = ",")) %>%
+  ungroup()
+
+comparison_df
+
+
+# Add reference info
+ref_profile <- data.frame(
+  Sequence = ref_name,
+  Profile = NA_character_,
+  DiffCount = -1,
+  GroupSize = 1,
+  GroupLabel = ref_name
+)
+
+comparison_df <- bind_rows(ref_profile, comparison_df) %>%
+  filter(!(GroupLabel == ref_name & Sequence != ref_name))
+
+# Merge group labels
+long_df <- long_df %>%
+  left_join(comparison_df %>% select(Sequence, GroupLabel, DiffCount), by = "Sequence") %>%
+  mutate(Sequence = GroupLabel) %>%
+  distinct(Position, Sequence, .keep_all = TRUE)
+
+# Convert Position to integer BEFORE any more joins, factor only later
+long_df <- long_df %>% mutate(Position = as.integer(Position))
+ref_df <- ref_df %>% mutate(Position = as.integer(Position))
+
+# Join to get ref amino acids and assign tile categories
+long_df <- long_df %>%
+  left_join(ref_df, by = "Position") %>%
+  fuzzy_left_join(., domain_df,by = c("Position" = "Start", "Position" = "End"), match_fun = list(`>=`, `<=`)) %>% 
+  mutate(
+    IsDifferent = AminoAcid != RefAminoAcid,
+    IsStop = AminoAcid == "*",
+    IsGap = AminoAcid == "-",
+    IsFS = AminoAcid == "&",
+    DisplayAminoAcid = case_when(IsFS ~ "fs",
+                                 IsGap ~ "",
+                                 Sequence == ref_name | IsDifferent ~ AminoAcid,
+                                 TRUE ~ ""),
+#    DisplayAminoAcid = ifelse(Sequence == ref_name | IsDifferent, AminoAcid, ""),
+    TileCategory = case_when(
+      IsGap ~ "gap",
+      IsStop ~ "stop",
+      IsFS ~ "FS",
+      IsDifferent ~ "diff",
+      TRUE ~ Domain
+    ),
+    TileColor = case_when(
+    TileCategory == "gap" ~ NA_character_,
+    TileCategory == "stop" ~ "red",
+    TileCategory == "diff" ~ "yellow",
+    TileCategory == "FS" ~ "purple",
+    is.na(TileCategory) ~ "grey",
+    TRUE ~ TileColor
+  ))
+
+# Rename groups 
+long_df <- read_tsv(group_names) %>% 
+  left_join(long_df, .)
+
+# Now safe to factor Position and Sequence for plotting
+long_df$Position <- factor(long_df$Position, levels = sort(unique(long_df$Position)))
+
+sequence_order <- long_df %>%
+  select(Sequence, DiffCount) %>%
+  distinct() %>%
+  arrange(DiffCount) %>%
+  pull(Sequence)
+long_df$Sequence <- factor(long_df$Sequence, levels = sequence_order)
+
+# Prepare position mapping for connectors
+position_map <- data.frame(
+  ProteinPosition = as.integer(levels(long_df$Position)),
+  HeatmapX = seq_along(levels(long_df$Position)) - 1
+) %>% 
+  mutate(HeatmapX_adj = HeatmapX * protein_length / length(unique(long_df$Position)))
+
+
+# Domain bar plot with gray backbone behind domains
+base_bar <- data.frame(
+  xmin = 1,
+  xmax = protein_length,
+  ymin = 1,
+  ymax = 1.8
+)
+
+domain_plot <- ggplot() +
+  geom_segment(data = position_map,
+               aes(x = HeatmapX_adj, xend = HeatmapX_adj, y = 0.2, yend = 0),
+               color = "gray50", linewidth = 0.1) +
+  geom_segment(data = position_map,
+               aes(x = ProteinPosition, xend = HeatmapX_adj, y = 0.7, yend = 0.2),
+               color = "gray50", linewidth = 0.1) +
+  geom_segment(data = position_map,
+               aes(x = ProteinPosition, xend = ProteinPosition, y = 1.2, yend = 0.7),
+               color = "gray50", linewidth = 0.1) +
+  geom_rect(data = base_bar,
+            aes(xmin = xmin, xmax = xmax, ymin = 1.2, ymax = 1.8),
+            fill = "gray", color = "black") +
+  geom_rect(data = domain_df,
+            aes(xmin = Start, xmax = End, ymin = 1, ymax = 2, fill=TileColor),
+            color = "black") +
+  geom_text(data = domain_df,
+            aes(x = (Start + End)/2, y = 2.4, label = Domain), size=1.8, color = "black") +
+
+  scale_x_continuous(limits = c(0, protein_length), expand = c(0, 0)) +
+  scale_fill_identity() +
+  coord_cartesian(clip = "off") +
+  theme_void(base_size = 6) +
+  theme(plot.margin = margin(0, 0, 0, 0),
+        #plot.margin = margin(0, 10, 0, 10),
+    legend.position = "none"
+  )
+
+
+# Heatmap plot
+heatmap_plot <- ggplot(long_df, aes(x = factor(Position), y = reorder(New_GroupLabel, Order), fill = TileColor)) +
+  geom_tile(color = "gray90") +
+  geom_text(aes(label = DisplayAminoAcid), na.rm = TRUE, size=1.8) +
+  scale_fill_identity(na.value = "white") +
+  scale_y_discrete(limits = rev(levels(long_df$New_GroupLabel))) +
+  scale_x_discrete(position = "top") +
+  theme_minimal(base_size = 6) +
+  theme(axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0.5),
+    panel.grid = element_blank(),
+    plot.margin = margin(0, 0, 0, 0)
+#    plot.margin = margin(5, 10, 10, 10)
+  ) +
+  labs(y = "Sequence ID")
+
+# Combine plots vertically
+full_plot <- domain_plot / heatmap_plot + patchwork::plot_layout(heights = c(0.75, 5))
+
+# Display
+print(full_plot)
+
+
+# Optional: save to file
+ggsave(out_file, full_plot, width = 17.4, height = 6, units = "cm")
+
+```
+Changes:
+- represent frameshifts with a different symbol and set all positions following frameshifts to gaps
+  BLAU C3d, fGasAcu3 C3b, BEPA C3y
+- change names of sequence IDs to something more digestable
+- reorder sequences by C1, C2 C3, marine, fresh, chrXIX
+
+```{r}
+comparison_df %>% 
+  select(GroupLabel, seq_names) %>% 
+  distinct() %>% 
+  write_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/identical_sequences.txt")
+```
+

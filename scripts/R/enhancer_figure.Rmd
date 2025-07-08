@@ -1,0 +1,51 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse); theme_set(theme_bw())
+library(cowplot); theme_set(theme_cowplot(font_size=6))
+library(ggbeeswarm)
+library(ggpubr)
+```
+
+```{r}
+# Get file paths
+gfp_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/enhancer_assay/enhancer_GFP_normalized.txt"
+out_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/enhancer_assay/enhancer_GFP_figure.pdf"
+```
+
+```{r}
+gfp <- read_tsv(gfp_file) %>% 
+  mutate(Type = fct_relevel(Type, "Control", "SALR", "BEPA"))
+gfp
+```
+```{r}
+my_comparisons <- list( c("Control", "SALR"), c("Control", "BEPA"), c("SALR", "BEPA") )
+#my_comparisons <- list( c("Control", "SALR"), c("SALR", "BEPA"), c("Control", "BEPA") )
+
+final_plot <- gfp %>% 
+  ggplot(aes(Type, Normalized, color = Type)) +
+  geom_beeswarm(cex=3, dodge.width = .5, alpha = 0.7) +
+  geom_boxplot(fill = NA, outlier.shape = NA) +
+  scale_color_manual(values=c("#bcbec0","#d55e00","#0072b2")) +
+  theme_cowplot(8) +
+  panel_border(color="black", size=0.75) +
+  theme(legend.position = "none", axis.title.x=element_blank()) +
+  ylab("Normalized GFP intensity (a.u.)") +
+  stat_compare_means(comparisons = my_comparisons, label = "p.signif", method = "wilcox", size=2, label.y = c(2.2, 2.4, 2.6))
+final_plot
+```
+```{r}
+ggsave(
+  out_file,
+  plot = final_plot,
+  scale = 1,
+  width = 1.5,
+  height = 2.4,
+  units = c("in"),
+  dpi = 300,
+)
+```
+

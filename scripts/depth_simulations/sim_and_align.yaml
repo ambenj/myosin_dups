@@ -1,0 +1,17 @@
+# File paths
+outdir: /path/to/outdir             # Path to output directory
+ref_align: /path/to/ref_align.fa    # Reference to align reads to
+
+# Simulation parameters for paired end simulation
+depth: [8]                          # List of read depths (haploid depth so put half of total goal genome coverage)
+reps: 1                             # Number of replicates to simulate
+read_length: 76                     # Read length
+frag_mean: 150                      # Mean fragment size
+frag_sd: 50                         # Fragment standard deviation
+ref_sim_path: sim_fastas            # Path to folder with fastas for simulation
+ref_sim: # Reference files to simulate reads from
+  - ref_sim1.fa
+  - ref_sim2.fa
+
+# Depth calculation
+regions: /path/to/regions/file

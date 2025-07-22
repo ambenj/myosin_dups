@@ -268,14 +268,14 @@ af %>%
 depth_plot <- roi_cov %>% 
   filter(desc == "MYH3C3") %>% 
   ggplot(aes(yrs_since_found, chrXIX_norm_depth, color = pop)) +
-  geom_point(data = filter(roi_cov, desc == "MYH3C3", pop == "RABS"), size = 2.5, shape=5) +
+  geom_point(data = filter(roi_cov, desc == "MYH3C3", pop == "RABS"), size = 2.5, shape=5, stroke=1.5) +
   geom_line(data = filter(roi_cov, desc == "MYH3C3", pop != "RABS"),size = 1) +
   geom_point(data = filter(roi_cov, desc == "MYH3C3", pop != "RABS"), size = 1.5) +
-    theme_cowplot(8) +
+    theme_cowplot(6) +
   panel_border(color="black", size=0.75) +
-  theme(legend.position = c(0.8, 0.3)) +
-  scale_color_manual("Population", values=c("#d55e00", "#cc79a7", "#7a669b", "#56b4e9")) +
-    scale_y_continuous(limits = c(0,2), expand = expansion(mult = c(0, 0))) +
+  theme(legend.position = "none") +
+  scale_color_manual("Population", values=c("#d73027", "#cc79a7", "#7a669b", "#56b4e9")) +
+    scale_y_continuous(limits = c(0,2.2), expand = expansion(mult = c(0, 0))) +
   scale_x_continuous(limits = c(-.5,32.5), expand = expansion(mult = c(0, 0))) +
   xlab("Years since founding") +
   ylab("MYH3C3 normalized depth")
@@ -303,36 +303,37 @@ mk_LB
 ```{r}
 # Variant frequency plot
 af_plot <- af %>% 
-  filter(pos == 2744769) %>% 
-  head()
-af_plot
   ggplot(aes(yrs_since_found, ref_af, color = pop)) +
-  geom_point(data = filter(af, pos == 2744769, pop == "RABS"), size = 2.5, shape=5) +
+  geom_point(data = filter(af, pos == 2744769, pop == "RABS"), size = 2.5, shape=5, stroke=1.5) +
   geom_line(data = filter(af, pos == 2744769, pop != "RABS"),size = 1) +
   geom_point(data = filter(af, pos == 2744769, pop != "RABS"), size = 1.5) +
-    theme_cowplot(8) +
+    theme_cowplot(6) +
   panel_border(color="black", size=0.75) +
   theme(legend.position = "none") +
-  scale_color_manual("Population", values=c("#d55e00", "#cc79a7", "#7a669b", "#56b4e9")) +
+  scale_color_manual("Population", values=c("#d73027", "#cc79a7", "#7a669b", "#56b4e9")) +
     scale_y_continuous(limits = c(0,1), expand = expansion(mult = c(0, 0))) +
   scale_x_continuous(limits = c(-.5,32.5), expand = expansion(mult = c(0, 0))) +
   xlab("Years since founding") +
   ylab("FW allele frequency")
 ```
 ```{r}
-final_plot <- plot_grid(depth_plot, af_plot, ncol = 1, rel_heights = c(1, 1), labels = c("B","C"), label_size = 12)
-final_plot
+final_plot1 <- plot_grid(depth_plot, af_plot, ncol = 1, rel_heights = c(1, 1), labels = c("B","C"), label_size = 12)
+final_plot1
+```
+```{r}
+final_plot2 <- plot_grid(NULL, depth_plot, nrow = 1, rel_widths = c(1, 1), labels = c("E","F"), label_size = 12)
+final_plot2
 ```
 
 
 ```{r}
 ggsave(
   out_file,
-  plot = final_plot,
+  plot = final_plot2,
   scale = 1,
-  width = 8.5,
-  height = 11,
-  units = c("cm"),
+  width = 6.5,
+  height = 1.75,
+  units = c("in"),
   dpi = 300,
 )
 ```

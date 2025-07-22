@@ -1,6 +1,8 @@
 ---
 title: "CNV figure plot"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 
@@ -18,16 +20,11 @@ a <- read_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/assemblies/figu
   arrange(allele_type, min)
 a
 ```
-Wong color palette:
-black: #000000
-orange: #e69f00
-sky blue: #56b4e9
-blue green: 
 
 ```{r}
 wong_palette <- c("#000000", "#e69f00", "#56b4e9", "#009e73", "#f0e442", "#0072b2", "#d55e00", "#cc79a7")
-custom_colors <- c("#d9d9d9", "#e69f00", "#f0e442", "#009e73","#d9d9d9", "#d9d9d9", "#d9d9d9", "#d9d9d9", "#d9d9d9", "#d9d9d9", "#d9d9d9", "#d9d9d9")
-#custom_colors <- c("#d9d9d9", "#fb8072", "#fdb462", "#ffed6f","#d9d9d9", "#d9d9d9", "#d9d9d9", "#d9d9d9")
+custom_colors <- c("#d9d9d9", "#e69f00", "#f0e442", "#009e73","#d9d9d9", "#d9d9d9", "#d9d9d9", "#d9d9d9","#d9d9d9","#d9d9d9", "#d9d9d9", "#d9d9d9")
+#new red#d73027
 
 cluster_plot <- a %>% 
 #  filter(!str_detect(gene, "nlrc5|LOC")) %>% 
@@ -35,8 +32,8 @@ GC_chart(start = "start",
          end = "end", 
          group = "gene", 
          cluster = "allele_type", 
-         width = "800px", 
-         height = "400px") %>% 
+         width = "550px", 
+         height = "250px") %>% 
  GC_align(
      id_column = "gene", 
      id = "MYH3C1",
@@ -45,38 +42,44 @@ GC_chart(start = "start",
   GC_annotation(
     cluster = 1, type = "rectangle", rotation = 0,
     position = list(
-        list(c(61754, 25), c(80331, 75))),
+        list(c(61754, 10), c(80331, 90))),
     style = list(stroke ="black", strokeWidth = 1)) %>% 
   GC_annotation(
     cluster = 2, type = "rectangle", rotation = 0,
     position = list(
-        list(c(64361, 25), c(81965, 75)),
-        list(c(81966, 25), c(99605, 75))),
+        list(c(64361, 10), c(81965, 90)),
+        list(c(81966, 10), c(99605, 90))),
     style = list(stroke ="black", strokeWidth = 1)) %>% 
   GC_annotation(
     cluster = 3, type = "rectangle", rotation = 0,
     position = list(
-        list(c(64308, 25), c(81907, 75)),
-        list(c(81908, 25), c(99526, 75)),
-        list(c(99527, 25), c(117150, 75))),
+        list(c(64308, 10), c(81907, 90)),
+        list(c(81908, 10), c(99526, 90)),
+        list(c(99527, 10), c(117150, 90))),
     style = list(stroke ="black", strokeWidth = 1)) %>% 
   GC_annotation(
     cluster = 4, type = "rectangle", rotation = 0,
     position = list(
-        list(c(63375, 25), c(80978, 75)),
-        list(c(80979, 25), c(98601, 75)),
-        list(c(98602, 25), c(116227, 75)),
-        list(c(116228, 25), c(133886, 75))),
+        list(c(63375, 10), c(80978, 90)),
+        list(c(80979, 10), c(98601, 90)),
+        list(c(98602, 10), c(116227, 90)),
+        list(c(116228, 10), c(133886, 90))),
     style = list(stroke ="black", strokeWidth = 1)) %>% 
 #  GC_genes(marker = "boxarrow", marker_size = "small") %>%
   GC_scale(axis_type = "range", hidden=TRUE) %>% 
-  GC_scaleBar(title = "10kb", scaleBarUnit = 10000, cluster=1)  %>%
-  GC_labels("gene_labels", fontSize=8, adjustLabels = TRUE, y=25) %>%
+  GC_scaleBar(title = "20kb", scaleBarUnit = 20000, cluster=5)  %>%
+  GC_labels("gene_labels", fontSize=9, adjustLabels = TRUE, y = 6) %>%
   GC_clusterLabel(title = unique(a$allele_type)) %>%
   GC_legend(FALSE) %>% 
-  GC_color(customColors = custom_colors )
-cluster_plot
+  GC_color(customColors = custom_colors)
 
+cluster_plot
+?GC_annotation
+```
+
+
+
+```{r}
 # Save cluster plot to temp.html file
 htmlwidgets::saveWidget(cluster_plot, "temp.html", selfcontained = TRUE)
 
@@ -87,8 +90,5 @@ webshot2::webshot(
   zoom = 10, # Increase zoom for higher resolution
   selector = ".geneviewer")
 
-cluster_plot
 ```
-
-
 

@@ -15,7 +15,6 @@ library(tidyverse); theme_set(theme_classic())
 library(fs)
 library(ggpubr)
 library(ggbeeswarm)
-#library(mapproj)
 library(gdsfmt)
 library(SNPRelate)
 library(ggrepel)
@@ -27,6 +26,12 @@ library(cowplot); theme_set(theme_cowplot(font_size=6))
 ga5_roi_file <- "/labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/gasAcuv5_C4masked_nochrY/06_samtools_coverage_roi/roi_coverage_mapq3.txt"
 metadata_file <- "/labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/metadata_227genomes.txt"
 ga5_sim_roi_file <- "/labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/depth_simulations/206_genomes/02_coverage/stickleback_v5_assembly_MYH3C4dup_hardmasked_noChrY/roi_coverage_mapq3.txt"
+```
+```{r}
+# File paths for SNP data
+#vcf_file_1 <- "/labs/kingsley/ambenj/myosin/ecotypic_depth_gasAcu1-4/227_genomes.final.filtered_chrXIX_2614822-2744076.vcf"
+vcf_file_1 <- "/labs/kingsley/ambenj/myosin_dups/analysis/assemblies/gasAcu1-4/227_genomes.final.filtered.MYHSensitiveEcopeak.noDup.recode.vcf"
+het_file <- "/labs/kingsley/ambenj/myosin_dups/analysis/assemblies/gasAcu1-4/227_genomes.final.filtered.MYHSensitiveEcopeak.noDup.het"
 ```
 
 ```{r}
@@ -150,7 +155,7 @@ ga5_roi_cov %>%
 #  mutate(desc = fct_relevel(desc, "eda", "nlrc5", "calb2a")) %>% 
   ggplot(aes(reorder(samp, wg_norm_depth), wg_norm_depth, color = ecotype)) +
   geom_point() +
-  scale_color_manual(values=c("#d73027","#4575b4", "black")) +
+  scale_color_manual(values=c("#d73027","#0072b2", "black")) +
   theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
   facet_wrap(~desc, ncol = 1) +
   xlab("Individual") +
@@ -166,7 +171,7 @@ ga5_roi_cov %>%
 #  mutate(desc = fct_relevel(desc, "eda", "nlrc5", "calb2a")) %>% 
   ggplot(aes(reorder(samp, wg_norm_depth), wg_norm_depth, color = ecotype)) +
   geom_point() +
-  scale_color_manual(values=c("#d73027","#4575b4", "black")) +
+  scale_color_manual(values=c("#d73027","#0072b2", "black")) +
   theme(axis.text.x=element_text(angle = -90, hjust = 0)) +
   facet_wrap(~desc, ncol = 11) +
   xlab("Individual") +
@@ -193,7 +198,7 @@ ga5_roi_cov %>%
   filter(desc == "HTRA1A") %>%
   ggplot(aes(fct_reorder(samp, wg_norm_depth), wg_norm_depth, color = ecotype)) +
   geom_point() +
-  scale_color_manual(values=c("#d73027","#4575b4", "black")) +
+  scale_color_manual(values=c("#d73027","#0072b2", "black")) +
   theme(axis.text.x=element_text(angle = -90, hjust = 0), legend.position = c(0.025, 0.75)) +
   ylim(0,3) +
   ggtitle("HTRA1 read depth") +
@@ -222,7 +227,7 @@ ga5_roi_cov %>%
   ggplot(aes(fct_reorder(samp, wg_norm_depth), wg_norm_depth, color = ecotype)) +
   geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
   geom_point() +
-  scale_color_manual(values=c("#d73027","#4575b4", "black")) +
+  scale_color_manual(values=c("#d73027","#0072b2", "black")) +
   theme(axis.text.x=element_text(angle = -90, hjust = 0), legend.position = c(0.025, 0.75)) +
   xlab("Individual") +
   ylab("Normalized MYH3C3 read depth")
@@ -238,7 +243,7 @@ ga5_roi_cov %>%
   ggplot(aes(fct_reorder(samp, wg_norm_depth), wg_norm_depth, color = ecotype)) +
     geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
   geom_point() +
-  scale_color_manual(values=c("#d73027","#4575b4", "black")) +
+  scale_color_manual(values=c("#d73027","#0072b2", "black")) +
   theme(axis.text.x=element_text(angle = -90, hjust = 0), legend.position = c(0.03, 0.75)) +
   xlab("Individual") +
   ylab("Normalized MYH3C3 read depth")
@@ -255,7 +260,24 @@ ga5_roi_cov %>%
   ggplot(aes(fct_reorder(samp, wg_norm_depth), wg_norm_depth, color = ecotype)) +
     geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
   geom_point() +
-  scale_color_manual(values=c("#d73027","#4575b4", "black")) +
+  scale_color_manual(values=c("#d73027","#0072b2", "black")) +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0), legend.position = c(0.04, 0.79)) +
+  xlab("Individual") +
+  ylab("Normalized MYH3C3 read depth")
+```
+
+```{r fig.width=3, fig.height=4}
+# Plot MYH3C3 read depth for MAYR lake
+ga5_roi_cov %>% 
+  filter(desc == "MYH3C3",
+         sex=="female",
+         type=="real",
+         acronym=="MAYR",
+         samp_length > 6) %>%
+  ggplot(aes(fct_reorder(samp, wg_norm_depth), wg_norm_depth, color = ecotype)) +
+    geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
+  geom_point() +
+  scale_color_manual(values=c("#0072b2")) +
   theme(axis.text.x=element_text(angle = -90, hjust = 0), legend.position = c(0.04, 0.79)) +
   xlab("Individual") +
   ylab("Normalized MYH3C3 read depth")
@@ -272,7 +294,7 @@ C3_global <- ga5_roi_cov %>%
   ggplot(aes(fct_reorder(samp, wg_norm_depth), wg_norm_depth, color = ecotype)) +
     geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
   geom_point() +
-  scale_color_manual(values=c("#d73027","#4575b4", "black")) +
+  scale_color_manual(values=c("#d73027","#0072b2", "black")) +
    theme_cowplot(6) +
   theme(axis.text.x=element_text(angle = -90, hjust = 0), legend.position = c(0.07, 0.79)) +
 
@@ -286,7 +308,7 @@ C3_global
 ga5_roi_cov %>% 
   filter(desc == "MYH3C3", type=="real", sex=="female", c155_global_FvsM %in% c(0,1), samp_length > 6) %>%
   ggscatter(x = "GPS_north", y = "wg_norm_depth",
-   color = "ecotype", palette = c("#d73027","#4575b4"),
+   color = "ecotype", palette = c("#d73027","#0072b2"),
    add = "reg.line", conf.int = TRUE,
    xlab = "Latitude (°N)",
    ylab = "Normalized depth of MYH3C3\n(1x genome coverage)") + 
@@ -299,7 +321,7 @@ ga5_roi_cov %>%
 Pacific_PNW_lat <- ga5_roi_cov %>% 
   filter(desc == "MYH3C3",  type=="real", sex=="female", PNW_independent_MvsF_c150 %in% c(0,1), samp_length > 6) %>%
   ggscatter(x = "GPS_north", y = "wg_norm_depth",
-   color = "ecotype", palette = c("#d73027","#4575b4"),
+   color = "ecotype", palette = c("#d73027","#0072b2"),
    add = "reg.line", conf.int = TRUE,
    xlab = "Latitude",
    ylab = "Normalized depth of MYH3C3") + 
@@ -313,7 +335,7 @@ Pacific_PNW_lat
 Pacific_CA_lat <- ga5_roi_cov %>% 
   filter(desc == "MYH3C3",  type=="real", sex=="female", PNW_independent_MvsF_c150 %in% c(0,1) | CaliforniaFreshwater_vs_AllPacificMarine_c153 %in% c(0,1), samp_length > 6) %>%
   ggscatter(x = "GPS_north", y = "wg_norm_depth",
-   color = "ecotype", palette = c("#d73027","#4575b4"),
+   color = "ecotype", palette = c("#d73027","#0072b2"),
    add = "reg.line", conf.int = TRUE,
    xlab = "Latitude",
    ylab = "Normalized depth of MYH3C3") + 
@@ -328,7 +350,7 @@ Pacific_CA_lat
 ga5_roi_cov %>% 
   filter(desc == "MYH3C3",  type=="real", sex=="female", c154_globalsuperglacial_FvsM %in% c(0,1), samp_length > 6) %>%
   ggscatter(x = "GPS_north", y = "wg_norm_depth",
-   color = "ecotype", palette = c("#d73027","#4575b4"),
+   color = "ecotype", palette = c("#d73027","#0072b2"),
    add = "reg.line", conf.int = TRUE,
    xlab = "Latitude",
    ylab = "Normalized depth of MYH3C3\n(1x genome coverage)") + 
@@ -342,7 +364,7 @@ ga5_roi_cov %>%
 Europe_lat <- ga5_roi_cov %>% 
   filter(desc == "MYH3C3",  type=="real", sex=="female", NorthEurope_independent_MvsF_c151 %in% c(0,1), samp_length > 6) %>%
   ggscatter(x = "GPS_north", y = "wg_norm_depth",
-   color = "ecotype", palette = c("#d73027","#4575b4"),
+   color = "ecotype", palette = c("#d73027","#0072b2"),
    add = "reg.line", conf.int = TRUE,
    xlab = "Latitude",
    ylab = "MYH3C3 normalized depth") + 
@@ -361,7 +383,7 @@ test <- ga5_roi_cov %>%
   geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
   geom_beeswarm(size = 3, cex=2.5,alpha = 0.7) +
   geom_boxplot(fill = NA) +
-  scale_color_manual(values=c("#d73027","#4575b4")) +
+  scale_color_manual(values=c("#d73027","#0072b2")) +
   xlab("Ecotype") +
   ylab("MYH3C3 normalized depth") +
   theme_cowplot(6) +
@@ -377,7 +399,7 @@ ga5_roi_cov %>%
   geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
   geom_beeswarm(size = 3, cex=2.5,alpha = 0.7) +
   geom_boxplot(fill = NA) +
-  scale_color_manual(values=c("#d73027","#4575b4")) +
+  scale_color_manual(values=c("#d73027","#0072b2")) +
   ggtitle("MYH3C3 read depth") +
   xlab("Ecotype") +
   ylab("Normalized depth of MYH3C3 \n(1x genome coverage)") +
@@ -405,73 +427,45 @@ ga5_roi_cov_wide %>%
   stat_cor()
 ```
 
-```{r fig.width=10, fig.height=10}
-# world.df = fortify(maps::map("world", plot = FALSE, fill = TRUE))
-# 
-# worldmap = ggplot() + geom_polygon(data = world.df
-#                                    , aes(x = long, y = lat, group = group)
-#                                    , fill="gray") +
-#                       scale_y_continuous(breaks = (-2:2) * 30) +
-#                       scale_x_continuous(breaks = (-4:4) * 45) +
-#                       theme_bw()+
-#                       theme(axis.line = element_line(colour = "black"),
-#                             panel.grid.major = element_blank(),
-#                             panel.grid.minor = element_blank(),
-#                             panel.border = element_blank(),
-#                             panel.background = element_blank()
-#                           ) 
-# 
-# shape = 16
-# alpha = 0.7
-# size = 5
-# 
-# worldmap3 = worldmap +
-#             geom_point(data = filter(metadata, c155_global_FvsM == 0)
-#                        , aes(x = GPS_east, y = GPS_north)
-#                        , colour = "#4575b4"
-#                        , alpha = alpha
-#                        , size = size
-#                        , shape = shape) +
-#             geom_point(data = filter(metadata, c155_global_FvsM == 1)
-#                        , aes(x = GPS_east, y = GPS_north)
-#                        , colour = "#d73027"
-#                        , alpha = alpha
-#                        , size= size
-#                        , shape=shape)
-# 
-# worldmap3+ coord_map("ortho", orientation=c(70,-90,0))
-# #            geom_text(data=freshName
-# #                      , aes(x=long,y=lat,label=label)
-# #                      , colour = "blue") + 
-# #            geom_text(data=marineName
-# #                      , aes(x=long, y=lat,label=label)
-# #                      , colour = "red3")
-
-```
 
 ## Final figure plots
 
 ```{r}
 # Plot MYH3C3 read depth for balanced global selection, excluding low depth original Jones et al. 2012 samples
-C3_global <- ga5_roi_cov %>% 
-  filter(desc == "MYH3C3",
-         sex=="female",
-         type=="real",
-         c155_global_FvsM %in% c(0,1),
-         samp_length > 6) %>%
-  ggplot(aes(fct_reorder(samp, wg_norm_depth), wg_norm_depth, color = ecotype)) +
-    geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
-  geom_segment( aes(x=samp, xend=samp, y=0, yend=wg_norm_depth)) +
+ga5_roi_cov_filt <- ga5_roi_cov %>% 
+  filter(desc == "MYH3C3",  type=="real", sex=="female", NorthEurope_independent_MvsF_c151 %in% c(0,1)|PNW_independent_MvsF_c150 %in% c(0,1)|CaliforniaFreshwater_vs_AllPacificMarine_c153 %in% c(0,1), samp_length > 6) %>%
+  mutate(Individual = case_when(samp == "BIGR_1_32_2007_03" ~ "BIGR_M",
+                                samp == "BIGR_52_54_2008_02" ~ "BIGR_F",
+                                samp == "LITC_0_05_2008_841" ~ "LITC_M",
+                                samp == "LITC_23_32_2008_306" ~ "LITC_F",
+                                samp == "MIDF_BLUP_2011_01" ~ "MIDF_M",
+                                samp == "MIDF_REND_2011_01" ~ "MIDF_F",
+                                samp == "TYNE_1_2001_14" ~ "TYNE_M",
+                                samp == "TYNE_8_2003_902" ~ "TYNE_F",
+                                TRUE ~ acronym))
+# Wilcoxon test for marine vs freshwater
+w <- wilcox.test(subset(ga5_roi_cov_filt, ecotype == "Freshwater")$wg_norm_depth, subset(ga5_roi_cov_filt, ecotype == "Marine")$wg_norm_depth, alternative = "greater")
+w
+
+C3_global <- ga5_roi_cov_filt %>% 
+  ggplot(aes(fct_reorder(Individual, wg_norm_depth), wg_norm_depth, color = ecotype)) +
+    geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey", linewidth=0.25) +
+  geom_segment( aes(x=Individual, xend=Individual, y=0, yend=wg_norm_depth)) +
   geom_point(size=1.5) +
-  scale_color_manual(values=c("#d73027","#4575b4")) +
+  scale_color_manual(values=c("#d73027","#0072b2"), name = "Ecotype") +
+#  scale_shape_manual(values = c(21,19)) +
   scale_y_continuous(limits = c(0,3.7), expand = expansion(mult = c(0, 0))) +
    theme_cowplot(6) +
     panel_border(color="black", size=0.75) +
-  theme(axis.text.x=element_text(angle = -90, hjust = 0), legend.position = c(0.015, 0.87)) +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0), 
+        legend.position = c(0.02, 0.8),
+        legend.box.background = element_rect(color="black", linewidth=0.25, fill = "white"),
+      legend.box.margin = margin(4, 4, 4, 4)) +
   xlab("Individual") +
-  ylab("Normalized MYH3C3 depth")
+  ylab("MYH3C3 normalized depth")
 #    ylim(0,3.5)
 C3_global
+
 ```
 
 
@@ -482,12 +476,12 @@ lat <- ga5_roi_cov %>%
   mutate(ocean = case_when(PNW_independent_MvsF_c150 %in% c(0,1)|CaliforniaFreshwater_vs_AllPacificMarine_c153 %in% c(0,1) ~ "Pacific",
                            NorthEurope_independent_MvsF_c151 %in% c(0,1) ~ "Atlantic")) %>% 
   ggplot(aes(GPS_north, wg_norm_depth, color = ecotype)) +
-  geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
+  geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey", linewidth=0.25) +
   geom_point(alpha=0.7, size=1.5) +
   geom_smooth(aes(fill = ecotype), method = "lm") +
   stat_cor(aes(color = ecotype), size=2) +
-  scale_color_manual(values=c("#d73027","#4575b4")) +
-  scale_fill_manual(values=c("#d73027","#4575b4")) +
+  scale_color_manual(values=c("#d73027","#0072b2"),) +
+  scale_fill_manual(values=c("#d73027","#0072b2")) +
   scale_y_continuous(limits = c(0,3.7), expand = expansion(mult = c(0, 0))) +
   facet_wrap(~factor(ocean, levels=c("Pacific", "Atlantic")), scales = "free_x") +
   theme_cowplot(6) +
@@ -502,24 +496,24 @@ lat
 ```{r}
 hz_plot <- ga5_roi_cov %>% 
   filter(desc == "MYH3C3", sex == "female", !is.na(`used _river_comparisons`), samp_length > 6) %>% 
-  mutate(location = as.factor(case_when(acronym == "BIGR" ~ "Big River,\nCalifornia",
+  mutate(location = as.factor(case_when(acronym == "BIGR" ~ "Big River,\nCA, USA",
                               acronym %in% c("BNMA", "BNST") ~ "Bonsall River,\nBC, Canada",
                               acronym == "LITC" ~ "Little Campbell River,\nBC, Canada",
-                              acronym == "TYNE" ~ "Tyne River,\nScotland",
+                              acronym == "TYNE" ~ "Tyne River,\nScotland, UK",
                               acronym == "MIDF" ~ "Midfjardara River,\nIceland")),
-         location = fct_relevel(location, "Big River,\nCalifornia", "Little Campbell River,\nBC, Canada")) %>% 
+         location = fct_relevel(location, "Big River,\nCA, USA", "Little Campbell River,\nBC, Canada", "Bonsall River,\nBC, Canada", "Tyne River,\nScotland, UK", "Midfjardara River,\nIceland")) %>% 
   ggplot(aes(location, wg_norm_depth, color = ecotype)) +
-  geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
+  geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey", linewidth=0.25) +
   geom_beeswarm(cex=2, dodge.width = .7, alpha = 0.7) +
-  geom_boxplot(fill = NA) +
-  scale_color_manual(values=c("#d73027","#4575b4")) +
+  geom_boxplot(fill = NA, outlier.shape = NA) +
+  scale_color_manual(values=c("#d73027","#0072b2")) +
   scale_y_continuous(limits = c(0,3.7), expand = expansion(mult = c(0, 0))) +
 #  ylim(0,2.5) +
-  xlab("River") +
   ylab("MYH3C3 normalized depth") +
   theme_cowplot(6) +
   panel_border(color="black", size=0.75) +
-  theme(legend.position = "none") +
+  theme(legend.position = "none",
+        axis.title.x=element_blank()) +
   stat_compare_means(aes(group = ecotype), label.x = 1, label.y = 3.3, size = 3, label="p.signif")
 hz_plot
 ```
@@ -532,21 +526,20 @@ hz_plot
 plots <- align_plots(test, C3_global, lat, hz_plot, align = 'v', axis = 'l')
 
 top_row <- plot_grid(
-  NULL, plots[[2]],
-  labels = c("B", "C"),
+  plots[[2]],
+  labels = c("B"),
   label_size = 12,
-  rel_widths = c(1, 3),
   nrow = 1
 )
 
 bottom_row <- plot_grid(
   plots[[3]], plots[[4]],
-  labels = c("D", "E"),
+  labels = c("C", "D"),
   rel_widths = c(1, 1),
   label_size = 12,
   nrow = 1
 )
-final_plot <- plot_grid(top_row, bottom_row, ncol = 1, rel_heights = c(1.2, 1), label_size = 12)
+final_plot <- plot_grid(top_row, bottom_row, ncol = 1, rel_heights = c(1.1, 1), label_size = 12)
 final_plot
 ```
 
@@ -557,7 +550,7 @@ ggsave(
   plot = final_plot,
   scale = 1,
   width = 6.5,
-  height = 4.5,
+  height = 3.75,
   units = c("in"),
   dpi = 300,
 )
@@ -566,127 +559,294 @@ ggsave(
 
 ## PCA of myosin region
 ```{r}
-# # Load vcf file spanning myosin global specific ecopeak
-# vcf.fn <- "../ecotypic_depth_gasAcu1-4/227_genomes.final.filtered_chrXIX_2614822-2744076.vcf"
-# 
-# # Reformat (biallelic version, can also try "copy.num.of.ref")
-# snpgdsVCF2GDS(vcf.fn, "test.gds", method="biallelic.only")
-# 
-# # Summary
-# snpgdsSummary("test.gds")
-# 
-# # Open GDS file
-# genofile <- snpgdsOpen("test.gds")
-# 
-# genofile
+
+# Reformat (biallelic version, can also try "copy.num.of.ref")
+snpgdsVCF2GDS(vcf_file_1, "all.gds", method="biallelic.only")
+
+# Summary
+snpgdsSummary("all.gds")
+
+# Open GDS file
+genofile <- snpgdsOpen("all.gds")
+
+genofile
+
+# Run PCA
+pca <- snpgdsPCA(genofile, num.thread=2, autosome.only = FALSE)
+#pca_filter <- snpgdsPCA(genofile, num.thread=2, autosome.only = FALSE, sample.id = vcf_samples_filt)
+
+snpgdsClose(genofile)
 ```
 
 ```{r}
-# Run PCA
-# pca <- snpgdsPCA(genofile, num.thread=2, autosome.only = FALSE)
-# 
-# snpgdsClose(genofile)
-# 
-# # variance proportion (%)
-# pc.percent <- pca$varprop*100
-# head(round(pc.percent, 2))
+# variance proportion (%)
+pc.percent <- round(pca$varprop*100, 2)
+PC1_lab <- paste("PC1 (", pc.percent[1], "%)", sep = "")
+PC2_lab <- paste("PC2 (", pc.percent[2], "%)", sep = "")
 ```
 
 ```{r}
 # make a data.frame
-# tab <- data.frame(sample.id = pca$sample.id,
-#     EV1 = pca$eigenvect[,1],    # the first eigenvector
-#     EV2 = pca$eigenvect[,2],    # the second eigenvector
-#     EV3 = pca$eigenvect[,3],    # the third eigenvector
-#     EV4 = pca$eigenvect[,4],    # the fourth eigenvector
-#     stringsAsFactors = FALSE)
-# 
-# tab_annot <- tab %>% 
-#   mutate(samp = str_replace_all(sample.id, '\\|', '_'),
-#          samp = str_replace_all(samp, '\\#', '_')) %>% 
-#   left_join(., filter(roi_cov, desc == "MYH3C3"), by=c("samp" = "samp"))
-# tab_annot
+tab <- data.frame(sample.id = pca$sample.id,
+    EV1 = pca$eigenvect[,1],    # the first eigenvector
+    EV2 = pca$eigenvect[,2],    # the second eigenvector
+    EV3 = pca$eigenvect[,3],    # the third eigenvector
+    EV4 = pca$eigenvect[,4],    # the fourth eigenvector
+    stringsAsFactors = FALSE)
 
+tab_annot <- tab %>%
+  mutate(samp = str_replace_all(sample.id, '\\|', '_'),
+         samp = str_replace_all(samp, '\\#', '_')) %>%
+  left_join(., filter(ga5_roi_cov, desc == "MYH3C3"), by=c("samp" = "samp")) %>% 
+  left_join(., read_tsv(het_file), by=c("sample.id" = "INDV")) %>% 
+  mutate(prop_hom = `O(HOM)`/N_SITES,
+         prop_het = 1-prop_hom,
+         het_status = ifelse(F > 0.5, "likely-hom", "likely-het"))
+tab_annot
+
+read_tsv(het_file)
+
+# Get subset of sample names that excludes Jones et al. 2012 samples and males
+
+vcf_samples_filt <- filter(tab_annot, sex=="female", samp_length > 6, desc=="MYH3C3", type=="real")$sample.id
+
+```
+
+
+```{r}
+# make filtered version of PCA with males and Jones et al. 2012 samples
+# Open GDS file
+genofile <- snpgdsOpen("all.gds")
+
+# Run PCA
+pca_filter <- snpgdsPCA(genofile, num.thread=2, autosome.only = FALSE, sample.id = vcf_samples_filt)
+
+snpgdsClose(genofile)
+
+# variance proportion (%)
+pc.percent_filter <- round(pca_filter$varprop*100, 2)
+PC1_lab_filter <- paste("PC1 (", pc.percent_filter[1], "%)", sep = "")
+PC2_lab_filter <- paste("PC2 (", pc.percent_filter[2], "%)", sep = "")
+
+# make a new data.frame
+tab_filter <- data.frame(sample.id = pca_filter$sample.id,
+    EV1_filter = pca_filter$eigenvect[,1],    # the first eigenvector
+    EV2_filter = pca_filter$eigenvect[,2],    # the second eigenvector
+    EV3_filter = pca_filter$eigenvect[,3],    # the third eigenvector
+    EV4_filter = pca_filter$eigenvect[,4],    # the fourth eigenvector
+    stringsAsFactors = FALSE)
+
+# Add to table
+tab_annot <- left_join(tab_annot, tab_filter)
+```
+
+
+
+```{r}
+# Make plot of all PCA without filtering where shape is het status
+xlab
+tab_annot %>%
+  ggplot(aes(EV1, EV2, color = wg_norm_depth)) +
+  geom_point(aes(shape = het_status), size = 3,) +
+  scale_color_viridis_c(option = "magma") +
+  theme_cowplot(8) +
+  panel_border(color="black", size=0.75) +
+  xlab(PC1_lab) +
+  ylab(PC2_lab)
+```
+```{r fig.width=20, fig.height=15}
+# Make plot of all PCA without filtering where shape is het status with labels
+tab_annot %>%
+  ggplot(aes(EV1, EV2, color = wg_norm_depth)) +
+  geom_point(aes(shape = het_status), size = 3,) +
+  geom_label_repel(aes(label = acronym),
+                   size = 3,
+                  box.padding   = 0.5,
+                  point.padding = 0.5,
+                  max.overlaps = 50, 
+                  nudge_x = 0.001,
+                  segment.color = 'grey50') +
+  scale_color_viridis_c(option = "magma") +
+  theme_cowplot(20) +
+  panel_border(color="black", size=0.75) +
+  xlab(PC1_lab) +
+  ylab(PC2_lab)
+  
+```
+
+
+```{r}
+# Make plot of all PCA without filtering where shape is marine or freshwater
+tab_annot %>%
+  ggplot(aes(EV1, EV2, color = wg_norm_depth)) +
+  geom_point(aes(shape = ecotype), size = 3,) +
+  scale_color_viridis_c(option = "magma") +
+  theme_cowplot(8) +
+  panel_border(color="black", size=0.75) +
+  xlab(PC1_lab) +
+  ylab(PC2_lab)
+```
+
+```{r fig.width=20, fig.height=15}
+# Make plot of all PCA without filtering where shape is marine or freshwater with labels
+tab_annot %>%
+  ggplot(aes(EV1, EV2, color = wg_norm_depth)) +
+  geom_point(aes(shape = ecotype), size = 3,) +
+  scale_color_viridis_c(option = "magma") +
+    theme_cowplot(20) +
+  panel_border(color="black", size=0.75) +
+  geom_label_repel(aes(label = acronym),
+                   size = 3,
+                  box.padding   = 0.5,
+                  point.padding = 0.5,
+                  max.overlaps = 50, 
+                  nudge_x = 0.001,
+                  segment.color = 'grey50') +
+  xlab(PC1_lab) +
+  ylab(PC2_lab)
+```
+
+Remake plots with filtering out males and Jones et al. 2012 samples before running the PCA
+
+```{r}
+# Make plot of filtered PCA where shape is het status
+tab_annot %>%
+  ggplot(aes(EV1_filter, EV2_filter, color = wg_norm_depth)) +
+  geom_point(aes(shape = het_status), size = 3,) +
+  scale_color_viridis_c(option = "magma") +
+  theme_cowplot(8) +
+  panel_border(color="black", size=0.75) +
+  xlab(PC1_lab_filter) +
+  ylab(PC2_lab_filter)
+```
+```{r fig.width=20, fig.height=15}
+# Make plot of filtered PCA where shape is het status with labels
+tab_annot %>%
+  ggplot(aes(EV1_filter, EV2_filter, color = wg_norm_depth)) +
+  geom_point(aes(shape = het_status), size = 3,) +
+  geom_label_repel(aes(label = acronym),
+                   size = 3,
+                  box.padding   = 0.5,
+                  point.padding = 0.5,
+                  max.overlaps = 50, 
+                  nudge_x = 0.001,
+                  segment.color = 'grey50') +
+  scale_color_viridis_c(option = "magma") +
+  theme_cowplot(20) +
+  panel_border(color="black", size=0.75) +
+  xlab(PC1_lab_filter) +
+  ylab(PC2_lab_filter)
+  
+```
+
+
+```{r}
+# Make plot of filtered PCA where shape is marine or freshwater
+tab_annot %>%
+  ggplot(aes(EV1_filter, EV2_filter, color = wg_norm_depth)) +
+  geom_point(aes(shape = ecotype), size = 3,) +
+  scale_color_viridis_c(option = "magma") +
+  theme_cowplot(8) +
+  panel_border(color="black", size=0.75) +
+  xlab(PC1_lab_filter) +
+  ylab(PC2_lab_filter)
+```
+
+```{r fig.width=20, fig.height=15}
+# Make plot of filtered PCA where shape is marine or freshwater with labels
+tab_annot %>%
+  ggplot(aes(EV1_filter, EV2_filter, color = wg_norm_depth)) +
+  geom_point(aes(shape = ecotype), size = 3,) +
+  scale_color_viridis_c(option = "magma") +
+    theme_cowplot(20) +
+  panel_border(color="black", size=0.75) +
+  geom_label_repel(aes(label = acronym),
+                   size = 3,
+                  box.padding   = 0.5,
+                  point.padding = 0.5,
+                  max.overlaps = 50, 
+                  nudge_x = 0.001,
+                  segment.color = 'grey50') +
+  xlab(PC1_lab_filter) +
+  ylab(PC2_lab_filter)
+```
+
+
+```{r fig.width=20, fig.height=15}
+# Plot relationship between EV1 and read depth
+tab_annot %>%
+  ggplot(aes(-EV1_filter, wg_norm_depth, color=ecotype, shape=het_status)) +
+  geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey", linewidth=0.25) +
+  geom_point(alpha=0.5, size=3) +
+  scale_color_manual(values=c("#d73027","#0072b2")) +
+    geom_label_repel(aes(label = acronym),
+                   size = 3,
+                  box.padding   = 0.5,
+                  point.padding = 0.5,
+                  max.overlaps = 20, 
+                  nudge_x = 0.001,
+                  segment.color = 'grey50') +
+      theme_cowplot(20) +
+  panel_border(color="black", size=0.75) +
+    xlab(paste("-",PC1_lab_filter, sep="")) +
+  ylab("MYH3C3 normalized depth")
+           
+```
+
+```{r fig.width=20, fig.height=15}
+# Plot relationship between EV1 and heterozygosity
+tab_annot %>%
+  ggplot(aes(-EV1_filter, prop_het, color=ecotype, shape=het_status)) +
+  geom_point(alpha=0.5, size=3) +
+  scale_color_manual(values=c("#d73027","#0072b2")) +
+    geom_label_repel(aes(label = acronym),
+                   size = 3,
+                  box.padding   = 0.5,
+                  point.padding = 0.5,
+                  max.overlaps = 20, 
+                  nudge_x = 0.001,
+                  segment.color = 'grey50') +
+      theme_cowplot(20) +
+  panel_border(color="black", size=0.75) +
+    xlab(paste("-",PC1_lab_filter, sep="")) +
+  ylab("Proportion heterozygous sites")
+           
+```
+```{r fig.width=20, fig.height=15}
+# Plot relationship between EV1 and F (inbreeding coefficient)
+tab_annot %>%
+  ggplot(aes(-EV1_filter, F, color=ecotype, shape=het_status)) +
+  geom_point(alpha=0.5, size=3) +
+  scale_color_manual(values=c("#d73027","#0072b2")) +
+    geom_label_repel(aes(label = acronym),
+                   size = 3,
+                  box.padding   = 0.5,
+                  point.padding = 0.5,
+                  max.overlaps = 20, 
+                  nudge_x = 0.001,
+                  segment.color = 'grey50') +
+      theme_cowplot(20) +
+  panel_border(color="black", size=0.75) +
+    xlab(paste("-",PC1_lab_filter, sep="")) +
+  ylab("F (Inbreeding)")
+           
 ```
 
 ```{r}
-# p <- tab_annot %>% 
-#   ggplot(aes(EV1, EV2, color = wg_norm_depth)) +
-#   geom_point(aes(shape = ecotype), size = 2,) +
-#   scale_color_viridis_c(option = "magma") 
-# p
-```
-```{r fig.width=20, fig.height=15}
-# p +
-#   geom_label_repel(aes(label = acronym),
-#                    size = 3,
-#                   box.padding   = 0.1, 
-#                   point.padding = 0.1,
-#                   segment.color = 'grey50')
+# Get list of candidate California homoyzgotes
+tab_annot %>% 
+  filter(EV2_filter < -0.025, het_status == "likely-hom")
 ```
 
-```{r fig.width=20, fig.height=15}
-# p +
-#   geom_label_repel(aes(label = samp),
-#                    size = 3,
-#                   box.padding   = 0.1, 
-#                   point.padding = 0.1,
-#                   segment.color = 'grey50')
+```{r}
+# Get list of candidate California homoyzgotes that are the closest to the bay area
+tab_annot %>% 
+  filter(EV2_filter < -0.025, het_status == "likely-hom", GPS_north < 38.5, GPS_north>37)
 ```
 
-```{r fig.width=15, fig.height=15}
-# Marine cluster zoom in
-# p +
-#   xlim(.1, .15) +
-#   ylim(-.045, -.025) +
-#   geom_label_repel(aes(label = samp),
-#                    size = 3,
-#                   box.padding   = 0.1, 
-#                   point.padding = 0.1,
-#                   segment.color = 'grey50')
-```
-```{r fig.width=20, fig.height=10}
-# Bottom marine cluster samples
-# tab_annot %>% 
-#   filter(between(EV1, .1, .15), between(EV2, -.045, -.025)) %>% 
-#   arrange(-wg_norm_depth) %>% 
-#   select(samp, pop, water_type, ecotype, wg_norm_depth)
+```{r}
+# Get list of candidate reciprocal deletion alleles (freshwater haplotype but 3 copy locus)
+tab_annot %>% 
+  filter(EV1_filter < -0.025, het_status == "likely-hom", wg_norm_depth < 1)
 ```
 
-```{r fig.width=20, fig.height=20}
-# p +
-#   xlim(-.07, -.01) +
-#   ylim(-.03, 0) +
-#   geom_label_repel(aes(label = samp),
-#                    size = 3,
-#                   box.padding   = 0.1, 
-#                   point.padding = 0.1,
-#                   segment.color = 'grey50')
-```
-
-```{r fig.width=20, fig.height=20}
-# p +
-#   xlim(-.06, -.045) +
-#   ylim(-.0275, -.02) +
-#   geom_label_repel(aes(label = samp),
-#                    size = 3,
-#                   box.padding   = 0.1, 
-#                   point.padding = 0.1,
-#                   segment.color = 'grey50')
-```
-
-```{r fig.width=20, fig.height=10}
-# Bottom freshwater cluster samples
-# tab_annot %>% 
-#   filter(between(EV1, -.06, -.04), between(EV2, -.03, -.02)) %>% 
-#   arrange(wg_norm_depth) %>% 
-#   select(samp, pop, water_type, ecotype, wg_norm_depth, GPS_north, GPS_east)
-```
-
-```{r fig.width=20, fig.height=10}
-# Top cluster samples
-# tab_annot %>% 
-#   filter(EV2 > 0.04) %>% 
-#   arrange(wg_norm_depth) %>% 
-#   select(samp, pop, water_type, ecotype, wg_norm_depth)
-```

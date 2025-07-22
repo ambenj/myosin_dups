@@ -1,0 +1,363 @@
+---
+title: "Analysis of myosin expression from temperature ASE dataset using kmers"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+
+```{r}
+library(tidyverse); theme_set(theme_bw())
+library(scales)
+library(ggpubr)
+library(cowplot)
+library(ggbeeswarm)
+```
+
+```{r}
+# Get input files
+kmer_counts_file <- "/labs/kingsley/ambenj/myosin_dups/analysis/temperature_ase/ASE_kmer_counts/27mer_counts_all.txt"
+m_file <- "/labs/kingsley/ambenj/myosin_dups/analysis/temperature_ase/metadata.txt"
+seq_stats_file <- "/labs/kingsley/ambenj/myosin_dups/raw/RNAseq/30-1151453543/sequencing_stats.csv"
+```
+
+```{r}
+# Read metadata file
+m <- read_tsv(m_file) %>% 
+  mutate(Tissue_type = factor(Tissue_type, levels=c("Whole larvae", "Flank muscle", "Abductor muscle", "Adductor muscle")))
+m
+
+```
+```{r}
+# Read sequencing stats file
+s <- read_csv(seq_stats_file)
+s
+```
+
+
+```{r}
+# Read kmer counts file
+df <- read_tsv(kmer_counts_file) %>% 
+  mutate(total_ASEcounts = count_kmer + count_kmerRC,
+         exon = as.factor(exon)) %>% 
+  separate(kmer_name, into=c("source", "ASE"), remove=FALSE, extra="drop", sep="_") %>% 
+  unite(kmer_pair, source, ASE, sep = "_", remove = FALSE) %>% 
+  mutate(kmer_pair = fct_reorder(kmer_pair, min))
+df
+df %>% 
+  group_by(kmer_name) %>% 
+  summarize(n=n()) %>% 
+  arrange()
+```
+```{r}
+
+```
+
+
+```{r}
+# Get count ratios
+df_wide <- df %>% 
+    filter(source != "C3dup", !kmer_pair %in% c("C1_ASE1", "C1_ASE12", "C2_ASE5", "C2_ASE8", "C3_ASE1", "C3_ASE9", "C3_ASE14")) %>% 
+  select(source, kmer_pair, exon, spans_intron, sample, allele, total_ASEcounts) %>% 
+  pivot_wider(id_cols = c(kmer_pair, sample, source, exon, spans_intron), names_from = allele, values_from = total_ASEcounts) %>% 
+  mutate(total_counts = BEPA + RABS,
+         include = case_when(BEPA >=1 & RABS >= 1 & total_counts >= 100 ~ "yes",
+                             TRUE ~ "no"),
+         BEPA = case_when(BEPA==0 ~ 1, # Add minimum of one read to counts so log scores wont be zero
+                          TRUE ~ BEPA),
+         RABS = case_when(RABS==0 ~ 1,
+                          TRUE ~ RABS),
+    BEPA_RABS_ratio = BEPA / RABS,
+         BEPA_RABS_log2_ratio = log2(BEPA/RABS),
+    prop_BEPA = BEPA/(BEPA+RABS)) %>% 
+  left_join(., m, by=c("sample" = "ID")) %>% 
+  left_join(., s, by=c("sample" = "Sample ID")) %>% 
+  mutate(RPM = (total_counts/ (`# Reads`*2))*1000000) %>%  # Multiple reads *2 bc table contains read pairs but kmer detection is each individual read
+  mutate(RP60M = (total_counts / (`# Reads`*2))*60000000,
+         RP60M = case_when(RP60M == 0 ~ 1, # add 1 so RP60M calculation wont be zero
+                                      TRUE ~ RP60M))
+df_wide
+```
+```{r}
+df_wide %>% 
+  filter(source == "C3", exon==40) %>% 
+  group_by(Tissue_type, Temperature) %>% 
+  summarize(n=n())
+```
+
+```{r}
+# Plot log2(BEPA/RABS ratio)
+df_wide %>% 
+  filter(include == "yes") %>% 
+  ggplot(aes(kmer_pair, prop_BEPA, color= Temperature)) +
+  geom_hline(yintercept = 0.5, linetype="dashed") +
+  geom_boxplot(position = position_dodge(width=0.8)) + 
+  geom_point(position = position_dodge(width=0.8)) +
+  facet_grid(cols=vars(source), rows = vars(Tissue_type), scales = "free_x", space= "free") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+
+```{r fig.height=10, fig.width=12}
+# Perform two-sided, one sample Wilcoxon test (safer to use with small n=3-10) to determine if sample is significantly greater than 0
+test_results <- df_wide %>%
+  group_by(kmer_pair, Temperature, source, Tissue_type) %>%
+  filter(!is.na(BEPA_RABS_ratio), include == "yes") %>%
+  summarize(
+    n = sum(!is.na(BEPA_RABS_log2_ratio)),
+    p_value = if (n >= 3) wilcox.test(prop_BEPA, mu = 0.5)$p.value else NA_real_,
+#    p_value = if (n >= 3) wilcox.test(BEPA_RABS_log2_ratio, mu = 0, alternative = "greater")$p.value else NA_real_,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    significance = case_when(
+      is.na(p_value)     ~ NA_character_,
+      p_value <= 0.001   ~ "***",
+      p_value <= 0.01    ~ "**",
+      p_value <= 0.05    ~ "*",
+      TRUE               ~ "ns"
+    )
+  )
+
+test_results
+```
+
+```{r}
+# Add y-label positions for plotting significance results
+label_positions <- df_wide %>%
+  filter(include == "yes") %>%
+  group_by(kmer_pair,Temperature, source, Tissue_type) %>%
+  summarize(y_pos = max(prop_BEPA, na.rm = TRUE) + 0.1, .groups = "drop")
+
+test_results <- left_join(test_results, label_positions,
+                          by = c("kmer_pair", "Temperature", "source", "Tissue_type"))
+```
+
+```{r fig.height=5, fig.width=6}
+# Plot with significance values
+ASE_plot <- df_wide %>%
+  filter(include == "yes") %>%
+  ggplot(aes(kmer_pair, prop_BEPA, color = Temperature)) +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  geom_point(position = position_dodge(width = 0.8)) +
+  facet_grid(cols = vars(source), rows = vars(Tissue_type), scales = "free_x", space = "free") +
+  geom_text(
+    data = test_results %>% filter(!is.na(significance)),
+    aes(x = kmer_pair, y = y_pos, label = significance, group = Temperature),
+    position = position_dodge(width = 0.8),
+    inherit.aes = FALSE,
+    size = 4) +
+  stat_compare_means(method = "wilcox.test", label = "p.signif") +
+  theme_cowplot(10) +
+  panel_border(color="black", size=0.75) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ASE_plot
+```
+
+```{r}
+# Save ASE figure to separate file
+ggsave(
+  "/labs/kingsley/ambenj/myosin_dups/analysis/temperature_ase/figures/ASE_plot_twosided.pdf",
+  plot = ASE_plot,
+  scale = 1,
+  width = 12,
+  height = 10,
+  units = c("in"),
+  dpi = 300,
+)
+```
+```{r}
+# Collapse data for each kmer into mean across kmers per condition
+means <- df_wide %>%
+  filter(include == "yes", source == "C3" | (source=="C2" & Tissue_type == "Whole larvae")) %>%
+  group_by(source, Tissue_type, Temperature, sample) %>% 
+  summarize(mean_BEPA_RABS_log2_ratio = mean(BEPA_RABS_log2_ratio),
+            geom_mean_prop_BEPA = exp(mean(log(prop_BEPA))),
+            BEPA_total = sum(BEPA),
+            RABS_total = sum(RABS),
+            total_prop_BEPA = BEPA_total/ (BEPA_total + RABS_total))
+means
+```
+
+
+```{r fig.height=10, fig.width=12}
+# Perform two-sided, one sample Wilcoxon test (safer to use with small n=3-10) to determine if sample is significantly greater than 0
+test_results_mean <- means %>%
+  group_by(Temperature, source, Tissue_type) %>%
+  summarize(
+    n = sum(!is.na(geom_mean_prop_BEPA)),
+    p_value = if (n >= 3) wilcox.test(geom_mean_prop_BEPA, mu = 0.5)$p.value else NA_real_,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    significance = case_when(
+      is.na(p_value)     ~ NA_character_,
+      p_value <= 0.001   ~ "***",
+      p_value <= 0.01    ~ "**",
+      p_value <= 0.05    ~ "*",
+      TRUE               ~ "ns"
+    )
+  )
+
+test_results_mean
+```
+```{r}
+# Add y-label positions for plotting significance results
+label_positions_means <- means %>%
+  group_by(Temperature, source, Tissue_type) %>%
+  summarize(y_pos = max(geom_mean_prop_BEPA, na.rm = TRUE) + 0.03, .groups = "drop")
+
+test_results_means <- left_join(test_results_mean, label_positions_means,
+                          by = c("Temperature", "source", "Tissue_type"))
+```
+
+```{r}
+means %>% 
+  ggplot(aes(Tissue_type, geom_mean_prop_BEPA, color = Temperature)) +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_boxplot(fill = NA, outlier.shape = NA) +
+  geom_beeswarm(cex=2, dodge.width = .7, alpha = 0.7, size=3) +
+  facet_grid(cols = vars(source), scales = "free_x", space = "free") +
+  geom_text(
+    data = test_results_means %>% filter(!is.na(significance)),
+    aes(x = Tissue_type, y = y_pos, label = significance, group = Temperature),
+    position = position_dodge(width = 0.8),
+    inherit.aes = FALSE,
+    size = 4) +
+  stat_compare_means(method = "wilcox.test", label = "p.signif", vjust = 0.5) +
+  theme_cowplot(10) +
+  panel_border(color="black", size=0.75) +
+  scale_x_discrete(labels = label_wrap(10)) +
+  xlab("Tissue type") +
+  ylab("total_proportion_BEPA")
+```
+
+
+```{r fig.height=5, fig.width=6}
+# Plot total counts normalized to number of reads sequenced in each library
+df_wide %>% 
+  ggplot(aes(kmer_pair, RPM, color= Temperature)) +
+  geom_boxplot(position = position_dodge(width=0.8)) + 
+  geom_point(position = position_dodge(width=0.8)) +
+  facet_grid(cols=vars(source), rows = vars(Tissue_type), scales = "free_x", space= "free") +
+  stat_compare_means(method = "wilcox.test", label = "p.signif") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r fig.height=6, fig.width=8}
+# Plot total counts (log10 scale) normalized to number of reads sequenced in each library 
+total_expression <- df_wide %>% 
+  filter(spans_intron == "no") %>% 
+  ggplot(aes(kmer_pair, log10(RPM+1), color= Temperature)) +
+  geom_boxplot(position = position_dodge(width=0.8)) + 
+  geom_point(position = position_dodge(width=0.8)) +
+  facet_grid(cols=vars(source), rows = vars(Tissue_type), scales = "free_x", space= "free") +
+  stat_compare_means(method = "wilcox.test", label = "p.signif") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+total_expression
+```
+
+```{r}
+# Save ASE figure to separate file
+ggsave(
+  "/labs/kingsley/ambenj/myosin/temperature_ase/figures/total_expression_plot.pdf",
+  plot = total_expression,
+  scale = 1,
+  width = 12,
+  height = 10,
+  units = c("in"),
+  dpi = 300,
+)
+```
+
+
+```{r}
+total_counts_means <- df_wide %>%
+  group_by(source, Tissue_type, Temperature, sample) %>% 
+  summarize(mean_log10RPM = mean(log10(RPM+1)))
+
+total_counts_means %>% 
+  ggplot(aes(Tissue_type, mean_log10RPM, color = Temperature)) +
+  geom_boxplot(position = position_dodge(width = 0.8)) +
+  geom_point(position = position_dodge(width = 0.8)) +
+  facet_grid(cols = vars(source), scales = "free_x", space = "free") +
+  stat_compare_means(method = "wilcox.test", label = "p.signif", vjust = 0.5) +
+  theme_cowplot(10) +
+  panel_border(color="black", size=0.75) +
+  scale_x_discrete(labels = label_wrap(10)) +
+  xlab("Tissue type") +
+  ylab("log10(RPM+1)")
+```
+
+```{r}
+# Get count ratios for kmer that can distingish BEPA copies as well as RABS
+df_wide_C3_copies <- df %>% 
+    filter(kmer %in% c("CTAGAGGGAGCAATGAAAGAGGCTCGTTCT", "CTAGAGGGAGCATTGAAAGAGGCTCGTTCT", "CTTGAGGGAGCATTGAAGGAGGCTCGTTCT")) %>% 
+  select(source, exon, sample, allele, total_ASEcounts) %>% 
+  pivot_wider(id_cols = c(source, exon, sample), names_from = allele, values_from = total_ASEcounts) %>% 
+  mutate(total_counts = `BEPA-ab` + `BEPA-c` + RABS) %>% 
+  mutate(BEPA_RABS_ratio = (`BEPA-ab` + `BEPA-c`) / RABS)
+  
+df_wide_C3_copies
+```
+
+```{r fig.width=12, fig.height=4}
+df %>% 
+    filter(kmer %in% c("CTAGAGGGAGCAATGAAAGAGGCTCGTTCT", "CTAGAGGGAGCATTGAAAGAGGCTCGTTCT", "CTTGAGGGAGCATTGAAGGAGGCTCGTTCT")) %>% 
+  left_join(., m, by=c("sample" = "ID")) %>% 
+  ggplot(aes(sample, total_ASEcounts, fill=factor(allele, levels=c("RABS", "BEPA-ab", "BEPA-c")))) +
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values = c("#D16D6A", "#4B77D1", "#CCDAF5"), name = "C3 copy") +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylab("Proportion of expression") +
+  facet_grid(cols=vars(Tissue_type, Temperature), scales = "free_x", space= "free")
+```
+
+
+## Kinnex data analysis
+
+```{r}
+# Preliminary kinnex count data
+kinnex_count_file <- "/labs/kingsley/ambenj/myosin/temperature_ase/flnc_mapping/250515_C3_ratios.txt"
+
+```
+
+```{r}
+k <- read_tsv(kinnex_count_file) %>% 
+  left_join(., m)
+k
+```
+
+```{r}
+k_long <- k %>%
+  pivot_longer(cols=c("BEPA-C3a", "BEPA-C3b", "BEPA-C3c", "RABS-C3"), names_to = "C3_copy", values_to = "proportion")
+```
+
+```{r fig.width=11, fig.height=4}
+k_long %>% 
+  ggplot(aes(ID, proportion, fill=factor(C3_copy, levels=c("RABS-C3", "BEPA-C3a", "BEPA-C3b", "BEPA-C3c")))) +
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values = c("#D16D6A", "#4B77D1", "#789DE6","#CCDAF5"), name = "C3 copy") +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylab("Proportion of expression") +
+  facet_grid(cols=vars(Tissue_type, Temperature), scales = "free_x", space= "free")
+```
+
+```{r fig.width=11, fig.height=4}
+k_long %>% 
+  filter(C3_copy != "RABS-C3") %>% 
+  ggplot(aes(ID, proportion, fill=factor(C3_copy, levels=c("RABS-C3", "BEPA-C3a", "BEPA-C3b", "BEPA-C3c")))) +
+  geom_bar(position="fill", stat="identity") +
+  scale_fill_manual(values = c("#4B77D1", "#789DE6","#CCDAF5"), name = "C3 copy") +
+  geom_hline(yintercept = 0.33, linetype = "dashed") +
+  geom_hline(yintercept = 0.67, linetype = "dashed") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylab("Proportion of expression") +
+  facet_grid(cols=vars(Tissue_type, Temperature), scales = "free_x", space= "free")
+```

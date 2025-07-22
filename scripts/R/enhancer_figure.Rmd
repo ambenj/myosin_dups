@@ -29,7 +29,7 @@ final_plot <- gfp %>%
   ggplot(aes(Type, Normalized, color = Type)) +
   geom_beeswarm(cex=3, dodge.width = .5, alpha = 0.7) +
   geom_boxplot(fill = NA, outlier.shape = NA) +
-  scale_color_manual(values=c("#bcbec0","#d55e00","#0072b2")) +
+  scale_color_manual(values=c("#bcbec0","#d73027","#0072b2")) +
   theme_cowplot(8) +
   panel_border(color="black", size=0.75) +
   theme(legend.position = "none", axis.title.x=element_blank()) +

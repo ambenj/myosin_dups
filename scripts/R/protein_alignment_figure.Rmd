@@ -18,8 +18,8 @@ library(fuzzyjoin)
 
 
 # --- USER INPUT ---
-ref_name <- "BEPA-C3a"
-input_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/all_protein_FSmod_mafft_aligndivergent_sites.tsv"
+ref_name <- "BEPA-C3A"
+input_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/all_protein_FSmod_mafft_aligndivergent_sites_del_added.txt"
 #input_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/divergent_sites.tsv"
 domains_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/BEPA_XAB031_MYH3C3a_domains.txt"
 group_names <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/group_names.txt"
@@ -29,10 +29,10 @@ out_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/all_p
 # Define protein domains (relative to full protein)
 domain_df <- read_tsv(domains_file) %>% 
   mutate(TileColor = case_when(
-    Domain == "SH3" ~ "#a6cee3",
-    Domain == "Myosin motor" ~ "#1f78b4",
-    Domain == "IQ motif" ~ "#b2df8a",
-    Domain == "Myosin tail" ~ "#33a02c",
+    Domain == "SH3" ~ "#EBDFCC",
+    Domain == "Myosin motor" ~ "#FCF9ED",
+    Domain == "IQ motif" ~ "#A9A8AD",
+    Domain == "Myosin tail" ~ "#D9CECC",
     TRUE ~ NA_character_
   ))
 
@@ -106,6 +106,10 @@ long_df <- long_df %>%
                                  IsGap ~ "",
                                  Sequence == ref_name | IsDifferent ~ AminoAcid,
                                  TRUE ~ ""),
+    DisplayAminoAcid2 = case_when(IsFS ~ "fs",
+                                 IsGap ~ "",
+                                 Sequence == ref_name | IsDifferent ~ AminoAcid,
+                                 TRUE ~ AminoAcid),
 #    DisplayAminoAcid = ifelse(Sequence == ref_name | IsDifferent, AminoAcid, ""),
     TileCategory = case_when(
       IsGap ~ "gap",
@@ -116,16 +120,16 @@ long_df <- long_df %>%
     ),
     TileColor = case_when(
     TileCategory == "gap" ~ NA_character_,
-    TileCategory == "stop" ~ "red",
-    TileCategory == "diff" ~ "yellow",
-    TileCategory == "FS" ~ "purple",
-    is.na(TileCategory) ~ "grey",
+    TileCategory == "stop" ~ "black",
+    TileCategory == "diff" ~ "black",
+    TileCategory == "FS" ~ "black",
+    is.na(TileCategory) ~ "#E8E8E8",
     TRUE ~ TileColor
   ))
 
 # Rename groups 
 long_df <- read_tsv(group_names) %>% 
-  left_join(long_df, .)
+  left_join(long_df, ., by=c("GroupLabel"="GroupLabel"))
 
 # Now safe to factor Position and Sequence for plotting
 long_df$Position <- factor(long_df$Position, levels = sort(unique(long_df$Position)))
@@ -136,6 +140,7 @@ sequence_order <- long_df %>%
   arrange(DiffCount) %>%
   pull(Sequence)
 long_df$Sequence <- factor(long_df$Sequence, levels = sequence_order)
+
 
 # Prepare position mapping for connectors
 position_map <- data.frame(
@@ -165,7 +170,7 @@ domain_plot <- ggplot() +
                color = "gray50", linewidth = 0.1) +
   geom_rect(data = base_bar,
             aes(xmin = xmin, xmax = xmax, ymin = 1.2, ymax = 1.8),
-            fill = "gray", color = "black") +
+            fill = "#E8E8E8", color = "black") +
   geom_rect(data = domain_df,
             aes(xmin = Start, xmax = End, ymin = 1, ymax = 2, fill=TileColor),
             color = "black") +
@@ -183,17 +188,21 @@ domain_plot <- ggplot() +
 
 
 # Heatmap plot
-heatmap_plot <- ggplot(long_df, aes(x = factor(Position), y = reorder(New_GroupLabel, Order), fill = TileColor)) +
-  geom_tile(color = "gray90") +
-  geom_text(aes(label = DisplayAminoAcid), na.rm = TRUE, size=1.8) +
+heatmap_plot <- ggplot(filter(long_df, New_GroupLabel!="Reference"), aes(x = factor(Position), y = reorder(New_GroupLabel, Order), fill = TileColor)) +
+  geom_tile(color = NA) +
+#  geom_text(aes(label = DisplayAminoAcid, color = IsDifferent), ,na.rm = TRUE, size=1.8) +
+  geom_text(aes(label = DisplayAminoAcid2, color = IsDifferent), ,na.rm = TRUE, size=1.8) +
+  scale_color_manual(values=c("grey30", "white")) +
   scale_fill_identity(na.value = "white") +
   scale_y_discrete(limits = rev(levels(long_df$New_GroupLabel))) +
   scale_x_discrete(position = "top") +
   theme_minimal(base_size = 6) +
   theme(axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
     axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0.5),
     panel.grid = element_blank(),
-    plot.margin = margin(0, 0, 0, 0)
+    plot.margin = margin(0, 0, 0, 0),
+    legend.position="none"
 #    plot.margin = margin(5, 10, 10, 10)
   ) +
   labs(y = "Sequence ID")
@@ -206,7 +215,7 @@ print(full_plot)
 
 
 # Optional: save to file
-ggsave(out_file, full_plot, width = 17.4, height = 6, units = "cm")
+ggsave(out_file, full_plot, width = 6.5, height = 2.2, units = "in")
 
 ```
 Changes:

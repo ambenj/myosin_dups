@@ -1,0 +1,53 @@
+# Base outdirectory
+out_dir: /labs/kingsley/ambenj/myosin_dups/analysis/ase/
+
+# Directory containing raw paired fastq files in _R1_001.fastq.gz and _R2_001.fastq.gz extension (can set up symlinks for symplicity)
+reads_dir: /labs/kingsley/ambenj/myosin_dups/raw/RNAseq/30-1151453543/00_fastq
+
+# Sample names
+samp_prefixes:
+  - 113-116
+  - 114
+  - 115-118
+  - 11
+  - 137-140
+  - 138
+  - 139-142
+  - 155-158
+  - 156
+  - 157-160
+  - 173-176
+  - 174
+  - 175-178
+  - 185-188
+  - 186
+  - 187-190
+  - 18
+  - 192
+  - 193-196
+  - 194
+  - 209-212
+  - 210
+  - 211-214
+  - 227-230
+  - 228
+  - 229-232
+  - 24
+  - 25
+  - 28
+  - 29
+  - 2
+  - 34
+  - 35-38
+  - 36
+  - 37-40
+  - 3
+  - 4
+  - 54
+  - 55-58
+  - 56
+  - 65-68
+  - 66
+  - 67-70
+  - 6
+  - 9

@@ -1,0 +1,10 @@
+# Base outdirectory
+out_dir: /path/to/outdir
+
+# Directory containing raw paired fastq files in _R1_001.fastq.gz and _R2_001.fastq.gz extension (can set up symlinks for symplicity)
+reads_dir: /path/to/raw/fastq
+
+# Sample names
+samp_prefixes:
+  - samp1
+  - samp2

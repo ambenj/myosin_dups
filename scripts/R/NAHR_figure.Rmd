@@ -222,42 +222,54 @@ all_nogaps_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/nahr_analy
 ```
 
 ```{r}
-# Read in BLAU divergent sites file
+# Read in divergent sites file
 all_nogaps_df <- read_tsv(all_nogaps_file) %>% 
     pivot_longer(cols = -Position, names_to = c("sample", "dup"),names_sep = "-") %>% 
     pivot_wider(names_from = dup, values_from = value) %>% 
-  mutate(dup1_type = case_when(!is.na(dup1) ~ "dup1"),
-         dup2_type = case_when(dup2 == dup1 ~ "dup1",
-                               sample != "BLAU" & dup2 == dup3 ~ "dupL", 
-                               sample == "BLAU" & dup2 == dup4 ~ "dupL",
+  mutate(dup1_type = case_when(!is.na(dup1) ~ "A"),
+         dup2_type = case_when(dup2 == dup1 ~ "A",
+                               sample != "BLAU" & dup2 == dup3 ~ "L", 
+                               sample == "BLAU" & dup2 == dup4 ~ "L",
                                sample == "BLAU" & dup2 == dup3 ~ "other",
-                               is.na(dup2) ~ "other"),
-         dup3_type = case_when(dup3 == dup1 ~ "dup1",
-                               dup3 == dup4 ~ "dupL",
-                               sample == "BLAU" & dup3 == dup2 ~ "other",
-                               !is.na(dup3) ~ "dupL"),
-         dup4_type = case_when(dup4 == dup1 ~ "dup1",
-                               !is.na(dup4) ~ "dupL")) %>% 
+                               !is.na(dup2) ~ "other"),
+         dup3_type = case_when(dup3 == dup1 ~ "A",
+                               dup3 == dup4 ~ "L",
+                               sample == "BLAU" ~ "other",
+                               !is.na(dup3) ~ "L"),
+         dup4_type = case_when(dup4 == dup1 ~ "A",
+                               !is.na(dup4) ~ "L")) %>% 
   pivot_longer(ends_with("type"), names_to = "dup", values_to = "variant_type") %>% 
   mutate(dup = str_remove(dup, "_type"),
-         sample = factor(sample, levels = c("BEPA", "ECHO", "JADE", "CMCB", "DNSE", "KFSY", "BLAU"))) %>% 
-  filter(!is.na(variant_type), !(sample == "BLAU" & dup1==dup2 & dup1==dup3 & dup1==dup4), !(sample != "BLAU" & dup1==dup2 & dup1==dup3))
+         sample = factor(sample, levels = c("BEPA", "ECHO", "JADE", "CMCB", "DNSE", "KFSY", "BLAU")),
+         variant_type = case_when(sample == "BLAU" & dup1==dup2 & dup1==dup3 & dup1==dup4 ~ "non-informative",
+                                  sample != "BLAU" & dup1==dup2 & dup1==dup3 & dup != "dup4" ~ "non-informative",
+#                                  variant_type == "other" ~ "non-informative",
+                                  TRUE ~ variant_type),
+        variant_type = factor(variant_type, levels =c("A", "L", "non-informative")),
+        region = case_when(dup == "dup1" ~ "A",
+                           dup == "dup2" ~ "B",
+                           (dup == "dup3" & sample != "BLAU") | dup == "dup4" ~ "L",
+                           dup == "dup3" & sample == "BLAU" ~ "C")) %>% 
+  filter(!is.na(variant_type)) %>% 
+  group_by(Position) %>% 
+  filter(any(grepl("L", variant_type)))
+#  filter(!is.na(variant_type), !(sample == "BLAU" & dup1==dup2 & dup1==dup3 & dup1==dup4), !(sample != "BLAU" & dup1==dup2 & dup1==dup3))
 ```
 ```{r}
 # Make function to generate heatmap plot when there are 4 duplication copies
 div_pos_plot_all <- function(df){
   p<- df %>%
-    ggplot(aes(x = factor(Position), y = reorder(dup, desc(dup)), fill = variant_type)) +
+    ggplot(aes(x = factor(Position), y = reorder(region, desc(region)), fill = variant_type)) +
     geom_tile(color="white") +
-    scale_fill_manual(values = c("#00674b", "#00d399","grey")) + 
+    scale_fill_manual(values = c("#00674b", "#00d399","darkgrey", "red","#d9d9d9")) + 
     scale_x_discrete(position = "top") +
-    theme_minimal(base_size = 6.5) +
+    theme_minimal(base_size = 7) +
     theme(axis.title.x = element_blank(),
 #      axis.title.y = element_blank(),
     axis.text.x = element_text(angle = 90, hjust = 0, vjust = 0.5),
+    legend.position = "top",
     panel.grid = element_blank(),
-    plot.margin = margin(0, 0, 0, 0),
-    legend.position="none"
+    plot.margin = margin(0, 0, 0, 0)
   )
   return(p)
 }
@@ -265,18 +277,19 @@ div_pos_plot_all <- function(df){
 
 ```{r}
 all_nogaps_df
-div_pos_plot_all(filter(all_nogaps_df, (sample == "BLAU" & dup1!=dup4)| (sample != "BLAU" & dup1!=dup3))) + 
+#div_pos_plot_all(filter(all_nogaps_df, (sample == "BLAU" & dup1!=dup4)| (sample != "BLAU" & dup1!=dup3))) + 
+div_pos_plot_all(all_nogaps_df) + 
   facet_grid(rows = vars(sample), scale="free_y", space="free_y", switch = "y") +
   theme(strip.placement = "outside", axis.title.y = element_blank(), panel.spacing.y = unit(0.1, "lines"))
 ```
 ```{r}
-ggsave("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/nahr_analysis/shared_plot_allSamps_allPos_figure.pdf", width = 6.5, height = 2.5, units = "in")
+ggsave("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/nahr_analysis/shared_plot_allSamps_allPos_figure.pdf", width = 6.5, height = 3, units = "in")
 ```
 
 
 ```{r}
-# Since CMCB, DNSE, KFSY, and JADE results are the same, filter down to one representative
-div_pos_plot_all(filter(all_nogaps_df, sample %in% c("BEPA", "ECHO", "CMCB", "BLAU"), (sample == "BLAU" & dup1!=dup4)| (sample != "BLAU" & dup1!=dup3))) + 
+# Since CMCB, DNSE, KFSY, and JADE results are very similar, filter down to one representative
+div_pos_plot_all(filter(all_nogaps_df, sample %in% c("BEPA", "ECHO", "CMCB", "BLAU"))) + 
   facet_grid(rows = vars(sample), scale="free_y", space="free_y", switch = "y") +
   theme(strip.placement = "outside", axis.title.y = element_blank())
 ```

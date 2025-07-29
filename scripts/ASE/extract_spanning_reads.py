@@ -28,6 +28,7 @@ def main():
     results = []
 
     for _, row in df.iterrows():
+        print(row)
         region_name = row['name']
         chrom = row['chr']
         start = int(row['start'])
@@ -45,6 +46,10 @@ def main():
                 count += 1
 
         out_bam.close()
+
+        # Index the output BAM file
+        pysam.index(output_bam_path) 
+               
         results.append({
             "name": region_name,
             "chr": chrom,
@@ -55,6 +60,8 @@ def main():
         })
 
     bam.close()
+
+    
 
     # Write summary table
     output_table_path = os.path.join(args.outdir, f"{sample_prefix}.counts.txt")

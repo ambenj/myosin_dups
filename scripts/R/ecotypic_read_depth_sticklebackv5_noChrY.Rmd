@@ -19,6 +19,9 @@ library(gdsfmt)
 library(SNPRelate)
 library(ggrepel)
 library(cowplot); theme_set(theme_cowplot(font_size=6))
+library(mapproj)
+library(sf)
+library(rnaturalearth)
 ```
 
 ```{r}
@@ -32,6 +35,10 @@ ga5_sim_roi_file <- "/labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/d
 #vcf_file_1 <- "/labs/kingsley/ambenj/myosin/ecotypic_depth_gasAcu1-4/227_genomes.final.filtered_chrXIX_2614822-2744076.vcf"
 vcf_file_1 <- "/labs/kingsley/ambenj/myosin_dups/analysis/assemblies/gasAcu1-4/227_genomes.final.filtered.MYHSensitiveEcopeak.noDup.recode.vcf"
 het_file <- "/labs/kingsley/ambenj/myosin_dups/analysis/assemblies/gasAcu1-4/227_genomes.final.filtered.MYHSensitiveEcopeak.noDup.het"
+```
+```{r}
+# Output file paths
+out_table_file <- "/labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/gasAcuv5_C4masked_nochrY/ecotypic_depth_samples.txt"
 ```
 
 ```{r}
@@ -556,6 +563,57 @@ ggsave(
 )
 ```
 
+```{r}
+# Make table of samples used for figure
+fig_table <- ga5_roi_cov %>% 
+  filter(desc == "MYH3C3",  type=="real", sex=="female", NorthEurope_independent_MvsF_c151 %in% c(0,1)|PNW_independent_MvsF_c150 %in% c(0,1)|CaliforniaFreshwater_vs_AllPacificMarine_c153 %in% c(0,1)|!is.na(`used _river_comparisons`), samp_length > 6) %>%
+  mutate(Figure2B_label = case_when(samp == "BIGR_1_32_2007_03" ~ "BIGR_M",
+                                samp == "BIGR_52_54_2008_02" ~ "BIGR_F",
+                                samp == "LITC_0_05_2008_841" ~ "LITC_M",
+                                samp == "LITC_23_32_2008_306" ~ "LITC_F",
+                                samp == "MIDF_BLUP_2011_01" ~ "MIDF_M",
+                                samp == "MIDF_REND_2011_01" ~ "MIDF_F",
+                                samp == "TYNE_1_2001_14" ~ "TYNE_M",
+                                samp == "TYNE_8_2003_902" ~ "TYNE_F",
+                                !is.na(`used _river_comparisons`) ~ NA,
+                                TRUE ~ acronym),
+         analysis_group = case_when(!is.na(Figure2B_label) & !is.na(`used _river_comparisons`) ~ "Global comparison, Hybrid zone",
+                                    !is.na(Figure2B_label) ~ "Global comparison",
+                                    !is.na(`used _river_comparisons`) ~ "Hybrid zone"),
+         region = case_when(PNW_independent_MvsF_c150 %in% c(0,1)|CaliforniaFreshwater_vs_AllPacificMarine_c153 %in% c(0,1) ~ "Pacific",
+                           NorthEurope_independent_MvsF_c151 %in% c(0,1) ~ "Atlantic",
+                           str_detect(samp, "MIDF|TYNE") ~ "Atlantic",
+                           str_detect(samp, "BNMA|BNST|BIGR|LITC") ~ "Pacific"),
+         wg_norm_depth = round(wg_norm_depth, digits = 3)) %>% 
+  select(samp, Figure2B_label, pop, GPS_north, GPS_east, ecotype, water_type, region, wg_norm_depth, analysis_group)
+
+# Write table to output file
+colnames(fig_table) <- c("Sample", "Figure2B label", "Population", "GPS (North)", "GPS(East)", "Ecotype", "Water type", "Ocean basin", "MYH3C3 normalized depth", "Analysis group(s)")
+
+fig_table %>% 
+  write_tsv(out_table_file)
+```
+
+```{r}
+# Count n in each group for global analysis
+fig_table %>% 
+  filter(str_detect(`Analysis group(s)`, "Global")) %>% 
+  group_by(`Ocean basin`, Ecotype) %>% 
+  summarize(n = n())
+```
+```{r}
+# Count n in each group for hybrid zone analysis
+fig_table %>% 
+  filter(str_detect(`Analysis group(s)`, "Hybrid")) %>% 
+  group_by(Population, Ecotype) %>% 
+  summarize(n = n())
+```
+
+```{r}
+fig_table %>% 
+  filter(str_detect(`Analysis group(s)`, "Global")) %>% 
+  group_by()
+```
 
 ## PCA of myosin region
 ```{r}

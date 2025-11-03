@@ -1,0 +1,144 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse); theme_set(theme_bw())
+library(mapproj)
+library(sf)
+library(rnaturalearth)
+library(ggspatial)
+library(maps)
+```
+
+
+```{r}
+# Read sample file
+s <- read_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/gasAcuv5_C4masked_nochrY/ecotypic_depth_samples.txt") %>% 
+  rename(GPS_north = `GPS (North)`, GPS_east = `GPS(East)`)
+  
+s
+```
+
+
+```{r fig.width=4, fig.height=4}
+# Plot full global map
+# Convert points to sf
+points_sf_pos <- st_as_sf(
+  filter(s, str_detect(`Analysis group(s)`, "Global"), Ecotype == "Marine"),
+  coords = c("GPS_east", "GPS_north"),
+  crs = 4326
+)
+
+points_sf_neg <- st_as_sf(
+  filter(s, str_detect(`Analysis group(s)`, "Global"), Ecotype == "Freshwater"),
+  coords = c("GPS_east", "GPS_north"),
+  crs = 4326
+)
+
+
+
+# World polygons
+world <- ne_countries(scale = "large", returnclass = "sf")
+
+# --- FIX FRANCE (keep only mainland polygon) ---
+france_mainland <- world[world$admin == "France", ] |>
+  st_cast("POLYGON") |>
+  dplyr::slice_max(order_by = st_area(geometry), n = 1)
+
+# --- FIX Norway (keep only mainland polygon) ---
+norway_mainland <- world[world$admin == "Norway", ] |>
+  st_cast("POLYGON") |>
+  dplyr::slice_max(order_by = st_area(geometry), n = 1)
+
+# # Recombine with rest of world (remove France first, then add mainland back)
+# world_fixed <- world |> filter(admin != "France") |>
+#   rbind(france_mainland)
+
+# Recombine with rest of world (remove France first, then add mainland back)
+world_fixed <- world |> filter(!admin %in% c("France")) |>
+  rbind(france_mainland, norway_mainland)
+
+# Define orthographic projection centered on North America
+center_lat <- 60
+center_lon <- -50
+ortho_crs <- paste0("+proj=ortho +lat_0=", center_lat, " +lon_0=", center_lon)
+
+# Transform geometries
+world_ortho   <- st_transform(world_fixed, crs = st_crs(ortho_crs))
+points_ortho_pos  <- st_transform(points_sf_pos, crs = st_crs(ortho_crs))
+points_ortho_neg  <- st_transform(points_sf_neg, crs = st_crs(ortho_crs))
+#points_ortho_herpes  <- st_transform(points_sf_herpes, crs = st_crs(ortho_crs))
+
+# Globe boundary (circle around origin in projected space)
+globe <- st_sfc(st_point(c(0, 0)), crs = st_crs(ortho_crs)) |>
+  st_buffer(6371000)   # ~ Earth radius in meters
+
+# Graticules (clip to visible hemisphere)
+graticules <- st_graticule() |>
+  st_transform(crs = st_crs(ortho_crs)) |>
+  st_intersection(globe)   # keep only visible half
+
+# Plot
+world_map <- ggplot() +
+  # Ocean background
+  geom_sf(data = globe, fill = "white", color = NA) +
+  # Graticules
+  geom_sf(data = graticules, color = "gray90", linewidth = 0.3) +
+  # Continents (with fixed France)
+  geom_sf(data = world_ortho, fill = "grey85", color = "white", linewidth = 0.1) +
+  # Points
+  geom_sf(data = points_ortho_neg, fill = "#0072b2", color = "#0072b2", size = 2, alpha = 0.6, shape = 21, stroke=0.3) +
+  geom_sf(data = points_ortho_pos, fill = "#d73027", color = "#d73027", size = 2, alpha = 0.6, shape=21) +
+  # Globe outline
+  geom_sf(data = globe, fill = NA, color = "grey60", linewidth = 0.5) +
+  coord_sf(crs = st_crs(ortho_crs), clip = "off") +
+  theme_void()
+world_map
+```
+```{r}
+# Save world map figure
+ggsave(
+  "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/gasAcuv5_C4masked_nochrY/global_map.pdf",
+  plot = world_map,
+  scale = 1,
+  width = 4,
+  height = 4,
+  units = c("in"),
+  dpi = 300,
+)
+```
+
+
+```{r fig.height=10, fig.width=6}
+# Get a simple world map dataset
+world_map <- map_data("world")
+
+# Example dataset with latitude and longitude
+points_df <- filter(s, str_detect(`Analysis group(s)`, "Global"))
+
+# Plot map and points
+ggplot() +
+  geom_polygon(
+    data = world_map,
+    aes(x = long, y = lat, group = group),
+    fill = "lightgray", color = "white"
+  ) +
+  geom_point(
+    data = points_df,
+    aes(x = GPS_east, y = GPS_north, color = Ecotype),
+    size = 2
+  ) +
+  coord_fixed(xlim = c(-175, 50), ylim = c(10, 80)) + # Keeps aspect ratio realistic
+  theme_minimal() +
+  labs(
+    title = "Sample Locations on World Map",
+    x = "Longitude",
+    y = "Latitude"
+  )
+
+```
+
+
+

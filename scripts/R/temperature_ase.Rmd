@@ -60,9 +60,12 @@ r %>%
 ```{r}
 # Read metadata file
 m <- read_tsv(m_file) %>% 
-  mutate(Tissue_type = case_when(Tissue_type == "Whole larvae" ~ "Whole fish",
+  mutate(Tissue_type = case_when(Tissue_type == "Whole larvae" ~ "Whole juvenile",
+                                 Tissue_type == "Flank muscle" ~ "Adult flank",
+                                 Tissue_type == "Abductor muscle" ~ "Adult abductor",
+                                 Tissue_type == "Adductor muscle" ~ "Adult adductor",
                                  TRUE ~ Tissue_type),
-    Tissue_type = factor(Tissue_type, levels=c("Whole fish", "Flank muscle", "Abductor muscle", "Adductor muscle")))
+    Tissue_type = factor(Tissue_type, levels=c("Whole juvenile", "Adult flank", "Adult abductor", "Adult adductor")))
 m
 
 ```
@@ -74,7 +77,7 @@ s
 ```{r}
 # Read kmer information
 k <- read_tsv(kmer_QC_file)
-k
+
 ```
 
 ```{r}
@@ -102,8 +105,7 @@ kmer_counts
 ```{r}
 # Read kmer counts file
 df_ase <- kmer_counts %>% 
-  filter(group == "ASE", use=="yes") %>% 
-#  filter(group == "ASE", use=="yes", spans_intron == "no") %>% 
+  filter(group == "ASE", use=="yes", spans_intron == "no") %>% 
   separate(kmer_name, into=c("source", "ASE"), remove=FALSE, extra="drop", sep="_") %>% 
   unite(kmer_pair, source, ASE, sep = "_", remove = FALSE) %>% 
   select(source, kmer_pair, use, exon, spans_intron, sample, allele, match_count, min) %>% 
@@ -268,7 +270,7 @@ df_ase %>%
 # Collapse data for each kmer into mean across kmers per condition
 means <- df_ase %>%
   filter(include == "yes") %>% 
-#  filter(include == "yes", source == "C3" | (source=="C2" & Tissue_type == "Whole fish")) %>%
+#  filter(include == "yes", source == "C3" | (source=="C2" & Tissue_type == "Whole juvenile")) %>%
   group_by(source, Tissue_type, Temperature, sample) %>% 
   summarize(n = n(),
             mean_BEPA_RABS_log2_ratio = mean(BEPA_RABS_log2_ratio),
@@ -277,8 +279,8 @@ means <- df_ase %>%
             BEPA_total = sum(BEPA),
             RABS_total = sum(RABS),
             total_prop_BEPA = BEPA_total/ (BEPA_total + RABS_total)) %>% 
-#  filter((source == "C2" & n==4)|(source=="C3" & n==9)) # Require all kmers to be called
-  filter((source == "C2" & n==6)|(source=="C3" & n==11)) # Require all kmers to be called
+  filter((source == "C2" & n==4)|(source=="C3" & n==9)) # Require all kmers to be called
+
 
 means
 ```
@@ -311,12 +313,13 @@ test_results_means <- left_join(test_results_mean, label_positions_means,
                           by = c("Temperature", "source", "Tissue_type"))
 
 # Plot collapsed ASE results using arithmetic mean of proportion BEPA
-means %>% 
+ase_means_temp_plot <- means %>% 
   ggplot(aes(Tissue_type, mean_prop_BEPA, color = Temperature)) +
   geom_hline(yintercept = 0.5, linetype = "dashed") +
   geom_boxplot(fill = NA, outlier.shape = NA) +
-  geom_beeswarm(cex=2, dodge.width = .7, alpha = 0.7, size=3) +
+  geom_beeswarm(cex=2, dodge.width = .7, alpha = 0.7, size=2) +
   scale_color_manual(values = c("black", "grey60")) +
+  scale_y_continuous(labels = percent, limits=c(0.45, 0.75)) +
   facet_grid(cols = vars(source), scales = "free_x", space = "free") +
   geom_text(
     data = test_results_means %>% filter(!is.na(significance)),
@@ -325,12 +328,14 @@ means %>%
     inherit.aes = FALSE,
     size = 4) +
   stat_compare_means(method = "wilcox.test", label = "p.signif", vjust = 0.5) +
-  theme_cowplot(10) +
+  theme_cowplot(7) +
   panel_border(color="black", size=0.75) +
   scale_x_discrete(labels = label_wrap(10)) +
-#  ylim(0.18,0.82) +
-  xlab("Tissue type") +
-  ylab("Proportion of expression from BEPA allele")
+  theme(legend.position = "top") +
+#  ylim(0.45, 0.75) +
+  xlab("Tissue") +
+  ylab("Percent BEPA allele expression")
+ase_means_temp_plot
 
 
 # Plot collapsed ASE results using arithmetic mean of kmers
@@ -354,7 +359,6 @@ ase_means_plot <- means %>%
   panel_border(color="black", size=0.75) +
   scale_x_discrete(labels = label_wrap(10)) +
   theme(legend.position = "none") +
-#  ylim(0.18,0.82) +
   xlab("Tissue") +
   ylab("Percent BEPA allele expression")
 
@@ -515,8 +519,8 @@ means %>%
 ```
 
 ```{r}
-comps <- list(c("Whole fish", "Flank muscle"), c("Flank muscle", "Abductor muscle"), c("Abductor muscle", "Adductor muscle"),
-              c("Whole fish", "Abductor muscle"), c("Whole fish", "Adductor muscle"), c("Flank muscle", "Adductor muscle"))
+comps <- list(c("Whole juvenile", "Adult flank"), c("Adult flank", "Adult abductor"), c("Adult abductor", "Adult adductor"),
+              c("Whole juvenile", "Adult abductor"), c("Whole juvenile", "Adult adductor"), c("Adult flank", "Adult adductor"))
 # Plot just 18C
 means %>% 
   filter(Temperature == "18C") %>% 
@@ -530,7 +534,7 @@ means %>%
 ```{r}
 # Plot just 18C
 means %>% 
-  filter(Temperature == "18C", Tissue_type == "Whole fish") %>% 
+  filter(Temperature == "18C", Tissue_type == "Whole juvenile") %>% 
   ggplot(aes(source, mean_prop_BEPA)) +
   geom_hline(yintercept = 0.5, linetype = "dashed") +
   geom_boxplot(fill = NA, outlier.shape = NA) +
@@ -555,7 +559,6 @@ df_ase %>%
 ```{r fig.height=8, fig.width=10}
 # Plot total counts (log10 scale) normalized to number of reads sequenced in each library 
 total_expression <- df_ase %>% 
- # filter(spans_intron == "no") %>% 
   ggplot(aes(kmer_pair, log10(RPM+1), color= Temperature)) +
   geom_beeswarm(cex=1.2, dodge.width = .7, alpha = 0.5, size=2) +
   geom_boxplot(position = position_dodge(width = 0.8), fill = NA, outlier.shape = NA) +
@@ -606,8 +609,7 @@ total_counts_means %>%
 ```{r}
 # Read kmer counts file and get MCE kmers
 df_mce <- kmer_counts %>% 
-  filter(group == "MCE", use=="yes") %>% 
-#  filter(group == "MCE", use=="yes", spans_intron=="no") %>% 
+  filter(group == "MCE", use=="yes", spans_intron=="no") %>% 
   separate(kmer_name, into=c("kmer_group"), remove=FALSE, extra="drop", sep="_") %>% 
   left_join(., m, by=c("sample" = "ID")) %>% 
   left_join(., s, by=c("sample" = "Sample ID")) %>% 
@@ -617,7 +619,6 @@ df_mce <- kmer_counts %>%
 ```{r fig.height=8, fig.width=10}
 # Plot total counts (log10 scale) normalized to number of reads sequenced in each library 
 mce_plot <- df_mce %>% 
- # filter(spans_intron == "no") %>% 
   ggplot(aes(kmer_group, log10(RPM+1), color= Temperature)) +
   geom_beeswarm(cex=1.2, dodge.width = .7, alpha = 0.5, size=2) +
   geom_boxplot(position = position_dodge(width = 0.8), fill = NA, outlier.shape = NA) +
@@ -635,7 +636,6 @@ mce_plot
 # Plot total counts (log10 scale) normalized to number of reads sequenced in each library 
 df_mce %>% 
   filter(Temperature == "18C") %>% 
- # filter(spans_intron == "no") %>% 
   ggplot(aes(kmer_group, log10(RPM+1), color= source, fill=source)) +
   geom_beeswarm(cex=1.2, dodge.width = .7, alpha = 0.5, size=2, shape=21) +
   geom_boxplot(position = position_dodge(width = 0.8), fill = NA, outlier.shape = NA) +
@@ -657,19 +657,21 @@ mce_means <- df_mce %>%
   group_by(source, Tissue_type, Temperature, sample) %>% 
   summarize(mean_log10RPM = mean(log10(RPM+1)))
 
-mce_means %>% 
+mce_means_temp_plot <- mce_means %>% 
   ggplot(aes(Tissue_type, mean_log10RPM, color = Temperature)) +
-  geom_beeswarm(cex=1.2, dodge.width = .7, alpha = 0.5, size=3) +
+  geom_beeswarm(cex=1.2, dodge.width = .7, alpha = 0.5, size=2) +
   geom_boxplot(position = position_dodge(width = 0.8), fill = NA, outlier.shape = NA) +
   facet_grid(cols = vars(source), scales = "free_x", space = "free") +
   stat_compare_means(method = "wilcox.test", label = "p.signif", vjust = 0.25) +
   scale_color_manual(values = c("black", "grey60")) +
-  theme_cowplot(10) +
+  theme_cowplot(7) +
+  theme(legend.position = "top") +
   panel_border(color="black", size=0.75) +
   scale_x_discrete(labels = label_wrap(10)) +
   ylim(0,3.1) +
-  xlab("Tissue type") +
-  ylab("log10(RPM+1)")
+  xlab("Tissue") +
+  ylab("Total expression, log10(RPM+1)")
+mce_means_temp_plot
 ```
 ```{r fig.height=3, fig.width=5}
 mce_means %>% 
@@ -779,6 +781,32 @@ k %>%
   facet_grid(cols=vars(Tissue_type, Temperature), scales = "free_x", space= "free")
 ```
 
+```{r fig.width=6, fig.height=4}
+k_C3_temp_plot <- k %>% 
+  filter(str_detect(MYH_copy, "C3")) %>% 
+  ggplot(aes(ID, read_count, fill=allele)) +
+  geom_bar(position="fill", stat="identity", color="black") +
+  scale_fill_manual(values = c("#d73027", "#0072b2", "#56afe1","#c7e4f5"), name = "MYH3 copy") +
+ # scale_fill_manual(values = c("#D16D6A", "#4B77D1", "#789DE6","#CCDAF5"), name = "MYH3 copy") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0)),
+                     breaks = seq(0, 1, by = 0.1),
+                     labels = percent) +
+  geom_hline(yintercept = 0.5, linetype = "dashed") +
+  theme_cowplot(7) +
+#  panel_border(color="black", size=0.75) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x=element_blank(),
+        strip.background = element_rect(colour=NA, fill=NA),
+        strip.placement = "outside",
+        legend.position = "none") +
+  ylab("Percent of total C3 expression") +
+  xlab("Tissue") +
+  facet_grid(cols=vars(Tissue_type, Temperature), scales = "free_x", space= "free",
+             labeller = label_wrap_gen(width = 2, multi_line = TRUE),
+             switch = "x")
+k_C3_temp_plot
+```
+
 ```{r fig.width=4, fig.height=4}
 k_C3_plot <- k %>% 
   filter(str_detect(MYH_copy, "C3"), Temperature=="18C") %>% 
@@ -823,7 +851,7 @@ k %>%
 
 ```{r fig.width=2.5, fig.height=4}
 k %>% 
-  filter(str_detect(MYH_copy, "C2"), Temperature=="18C", Tissue_type=="Whole fish") %>% 
+  filter(str_detect(MYH_copy, "C2"), Temperature=="18C", Tissue_type=="Whole juvenile") %>% 
   ggplot(aes(ID, read_count, fill=allele)) +
   geom_bar(position="fill", stat="identity", color="black") +
   scale_fill_manual(values = c("#d73027", "#0072b2", "#56afe1","#c7e4f5"), name = "MYH3C2 copy") +
@@ -840,33 +868,48 @@ k %>%
 
 ## Combine into final plot
 
-```{r fig.height=2, fig.width=6.5}
-final_plot <- plot_grid(mce_means_plot, ase_means_plot, k_C3_plot, nrow = 1, labels = c('B', 'C', 'D'), label_size = 12, rel_widths = c(2,1,1))
-final_plot
-
-```
-
-```{r fig.height=4.5, fig.width=5}
-row1 <- plot_grid(mce_means_plot, labels = c('B'))
-row2 <- plot_grid(ase_means_plot, k_C3_plot, labels = c('C', 'D'))
-plot_grid(row1, row2, label_size = 12, nrow=2)
-```
 
 ```{r fig.height=4.5, fig.width=4.5}
 row1 <- plot_grid(mce_means_plot, labels = c('B'), nrow=1)
 d_panel <- plot_grid(NULL, k_C3_plot, ncol=1, rel_heights = c(0.2, 1))
 row2 <- plot_grid(ase_means_plot, d_panel, labels = c('C','D'), nrow=1, rel_widths = c(1, 1))
-final_plot2 <- plot_grid(row1, row2, label_size = 12, nrow=2)
-final_plot2
+final_plot <- plot_grid(row1, row2, label_size = 12, nrow=2)
+final_plot
 
-# Save ASE figure to separate file
+# Save final figure to separate file
 ggsave(
   "/labs/kingsley/ambenj/myosin_dups/analysis/ase/figures/expression_plot_v2.pdf",
-  plot = final_plot2,
+  plot = final_plot,
   width = 4.5,
   height = 4.5,
   units = c("in"),
   dpi = 300,
 )
+```
+
+```{r fig.height=5.5, fig.width=6.5}
+# Make supplemental figure
+row1 <- plot_grid(mce_means_temp_plot, ase_means_temp_plot, labels = c('A', 'B'), nrow=1, rel_widths = c(2, 1))
+row2 <- plot_grid(k_C3_temp_plot,NULL, labels = c('C'), nrow=1, rel_widths = c(3, 1.25))
+final_plot <- plot_grid(row1, row2, label_size = 12, nrow=2, rel_heights = c(1.2, 1))
+final_plot
+
+
+```
+```{r}
+# Save final figure to separate file
+ggsave(
+  "/labs/kingsley/ambenj/myosin_dups/analysis/ase/figures/temp_expression_supp_figure.pdf",
+  plot = final_plot,
+  width = 6.5,
+  height = 6,
+  units = c("in"),
+  dpi = 300,
+)
+```
+
+```{r}
+# Make final kmer table
+k
 ```
 

@@ -30,6 +30,7 @@ roi_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/transplant_pops/g
 wg_path <-"/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/transplant_pops/gasAcuv5_C4masked/06_samtools_coverage_wg"
 af_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/transplant_pops/Veeramah_PoolSeq_AFs_corrected.filtered_chrXIX.txt"
 out_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/transplant_pops/gasAcuv5_C4masked/poolseq_depth_figure.pdf"
+out_file_af <-"/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/transplant_pops/gasAcuv5_C4masked/poolseq_AF_figure.pdf"
 ```
 
 ## Depth analysis
@@ -307,15 +308,30 @@ af_plot <- af %>%
   geom_point(data = filter(af, pos == 2744769, pop == "RABS"), size = 2.5, shape=5, stroke=1.5) +
   geom_line(data = filter(af, pos == 2744769, pop != "RABS"),size = 1) +
   geom_point(data = filter(af, pos == 2744769, pop != "RABS"), size = 1.5) +
-    theme_cowplot(6) +
+    theme_cowplot(8) +
   panel_border(color="black", size=0.75) +
-  theme(legend.position = "none") +
+  theme(legend.position = c(0.8, 0.2)) +
   scale_color_manual("Population", values=c("#d73027", "#cc79a7", "#7a669b", "#56b4e9")) +
     scale_y_continuous(limits = c(0,1), expand = expansion(mult = c(0, 0))) +
   scale_x_continuous(limits = c(-.5,32.5), expand = expansion(mult = c(0, 0))) +
   xlab("Years since founding") +
   ylab("FW allele frequency")
+af_plot
 ```
+```{r fig.height=2.5, fig.width=3}
+# Save allele frequency plot
+ggsave(
+  out_file_af,
+  plot = af_plot,
+  scale = 1,
+  width = 3,
+  height = 2.5,
+  units = c("in"),
+  dpi = 300,
+)
+```
+
+
 ```{r}
 final_plot1 <- plot_grid(depth_plot, af_plot, ncol = 1, rel_heights = c(1, 1), labels = c("B","C"), label_size = 12)
 final_plot1
@@ -342,4 +358,5 @@ ggsave(
 final_plot_h <- plot_grid(depth_plot, af_plot, nrow = 1, rel_widths = c(1, 1), labels = c("B","C"), label_size = 12)
 final_plot_h
 ```
+
 

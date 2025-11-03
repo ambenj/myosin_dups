@@ -1,17 +1,19 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 
 ```{r}
 # Load packages
 library(ggplot2)
-library(tidyr)
-library(dplyr)
+library(tidyverse)
 library(readr)
 library(patchwork)
 library(fuzzyjoin)
+library(seqinr)
 ```
 
 ```{r fig.width=8, fig.height=3}
@@ -229,5 +231,151 @@ comparison_df %>%
   select(GroupLabel, seq_names) %>% 
   distinct() %>% 
   write_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/identical_sequences.txt")
+```
+
+```{r}
+# Get C1 freshwater/marine divergent aa
+C1_MF <- long_df %>% 
+  filter(!str_detect(MYH_copy, "Y"), MYH_copy == "C1") %>% 
+  select(Position, AminoAcid, New_GroupLabel) %>% 
+  pivot_wider(names_from = New_GroupLabel, values_from = AminoAcid) %>% 
+  filter(`RABS-C1` == `SALR-C1`, `RABS-C1` != `Freshwater C1 (n=9)`) %>% 
+  rename(mar_aa = `RABS-C1`, fw_aa = `Freshwater C1 (n=9)`) %>% 
+  select(Position, mar_aa, fw_aa) %>% 
+  mutate(MYH_copy = "C1")
+C1_MF
+
+```
+
+```{r}
+# Get C2 freshwater/marine divergent aa
+C2_MF <- long_df %>% 
+  filter(!str_detect(MYH_copy, "Y"), MYH_copy == "C2") %>% 
+  select(Position, AminoAcid, New_GroupLabel) %>% 
+  pivot_wider(names_from = New_GroupLabel, values_from = AminoAcid) %>% 
+  filter(`RABS-C2` == `SALR-C2`, `RABS-C2` != `Freshwater C2 (n=9)`) %>% 
+  rename(mar_aa = `RABS-C2`, fw_aa = `Freshwater C2 (n=9)`) %>% 
+  select(Position, mar_aa, fw_aa) %>% 
+  mutate(MYH_copy = "C2")
+C2_MF
+```
+
+```{r}
+# Get C3 freshwater/marine divergent aa
+C3_MF <- long_df %>% 
+  filter(!str_detect(MYH_copy, "Y"), str_detect(MYH_copy, "C3")) %>% 
+  select(Position, AminoAcid, New_GroupLabel) %>% 
+  pivot_wider(names_from = New_GroupLabel, values_from = AminoAcid) %>% 
+  filter(`RABS-C3` == `SALR-C3`, `RABS-C3` != `Freshwater C3A,B(n=16)`, `Freshwater C3A,B(n=16)` == `BOULxBDGB-C3L`) %>% 
+  rename(mar_aa = `RABS-C3`, fw_aa = `Freshwater C3A,B(n=16)`) %>% 
+  select(Position, mar_aa, fw_aa) %>% 
+  mutate(MYH_copy = "C3")
+C3_MF
+```
+
+```{r}
+MF_aa <- rbind(C1_MF, C2_MF, C3_MF) %>% 
+    mutate(mar_type = case_when(mar_aa %in% c("R", "H", "K") ~ "positive charge",
+                              mar_aa %in% c("D", "E") ~ "negative charge",
+                              mar_aa %in% c("S", "T", "N", "Q") ~ "polar",
+                              mar_aa %in% c("A", "V", "I", "L", "M", "F", "Y", "W") ~ "hydrophobic",
+                              mar_aa %in% c("C", "U", "G", "P") ~ "special"),
+         fw_type = case_when(fw_aa %in% c("R", "H", "K") ~ "positive charge",
+                              # fw_aa %in% c("D", "E") ~ "negative charge",
+                              fw_aa %in% c("S", "T", "N", "Q") ~ "polar",
+                              fw_aa %in% c("A", "V", "I", "L", "M", "F", "Y", "W") ~ "hydrophobic",
+                              fw_aa %in% c("C", "U", "G", "P") ~ "special"),
+         same_type = case_when(mar_type == fw_type ~ "yes",
+                               TRUE ~ "no"), 
+         Position = as.integer(as.character(Position))) %>% 
+  fuzzy_left_join(., domain_df,by = c("Position" = "Start", "Position" = "End"), match_fun = list(`>=`, `<=`)) %>% 
+  select(!(Start:TileColor))
+MF_aa
+```
+
+```{r}
+MF_aa %>% 
+write_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/Mar_FW_divergent_aa.txt")
+```
+
+
+```{r}
+# Perform hypergeometric test for enrichment within each copy
+MF_aa_HG <- MF_aa %>% 
+  group_by(MYH_copy, Domain) %>% 
+  summarise(MF_by_domain = n(), .groups = "drop") %>% 
+  group_by(MYH_copy) %>% 
+  mutate(MF_total = sum(MF_by_domain),
+         pos_total = 1931) %>% 
+  left_join(., select(mutate(domain_df, length = End - Start), Domain, length)) %>% 
+  mutate(HG_p_value = phyper(MF_by_domain-1, length, pos_total-length, MF_total, lower.tail = FALSE))
+
+MF_aa_HG
+
+# Number of "successes in sample": MF_by_domain
+# Number of "successes" in population": length
+# Number of "failures" in the population
+# Number of draws
+```
+```{r}
+# Perform hypergeometric test for enrichment changes in C1, C2, and C3
+MF_aa %>% 
+  group_by(Domain) %>% 
+  summarise(MF_by_domain = n(), .groups = "drop") %>% 
+  mutate(MF_total = sum(MF_by_domain),
+         pos_total = 1931) %>% 
+  left_join(., select(mutate(domain_df, length = End - Start), Domain, length)) %>% 
+  mutate(HG_p_value = phyper(MF_by_domain-1, length, pos_total-length, MF_total, lower.tail = FALSE))
+```
+
+# Calculate dN/dS
+```{r}
+# Read codon-aligned sequences
+alignment <- read.alignment(file = "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/All_CDS_w3outgroups_translation_alignment.fasta", format = "fasta", forceToLower = FALSE)
+
+n <- alignment_all$nb
+
+results <- data.frame()
+
+for (i in 1:(n - 1)) {
+  for (j in (i + 1):n) {
+    aln_pair <- list(
+      nb = 2,
+      nam = alignment_all$nam[c(i, j)],
+      seq = alignment_all$seq[c(i, j)],
+      com = ""
+    )
+    class(aln_pair) <- "alignment"
+    
+    result <- kaks(aln_pair)
+    ka <- result$ka
+    ks <- result$ks
+    ka_ks <- if (ks == 0) NA else ka / ks
+    
+    results <- rbind(results, data.frame(
+      seq1 = alignment_all$nam[i],
+      seq2 = alignment_all$nam[j],
+      ka = ka,
+      ks = ks,
+      ka_ks = ka_ks
+    ))
+  }
+}
+
+print(results)
+```
+
+```{r}
+results %>% 
+  mutate(ka_ks = if_else(ka_ks > 0, ka_ks, NA)) %>% 
+  arrange(-ka_ks) %>% 
+  write_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/All_CDS_w3outgroups_translation_alignment_kaks.txt")
+```
+
+```{r}
+results %>% 
+  filter(str_detect(seq1, "BEPA|RABS"), str_detect(seq2, "BEPA|RABS")) %>% 
+  mutate(ka_ks = if_else(ka_ks > 0, ka_ks, NA)) %>% 
+  arrange(-ka_ks)
 ```
 

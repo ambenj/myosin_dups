@@ -15,13 +15,16 @@ library(tidyverse); theme_set(theme_classic())
 library(fs)
 library(ggpubr)
 library(ggbeeswarm)
-library(gdsfmt)
-library(SNPRelate)
+#library(gdsfmt)
+#library(SNPRelate)
 library(ggrepel)
 library(cowplot); theme_set(theme_cowplot(font_size=6))
-library(mapproj)
-library(sf)
-library(rnaturalearth)
+library(ggtree)
+library(ape)
+library(patchwork)
+#library(mapproj)
+#library(sf)
+#library(rnaturalearth)
 ```
 
 ```{r}
@@ -273,6 +276,90 @@ ga5_roi_cov %>%
   ylab("Normalized MYH3C3 read depth")
 ```
 
+
+```{r fig.width=4, fig.height=4}
+# Plot MYH3C3 read depth for locations with multiple samples
+ga5_roi_cov
+multi_samp <- ga5_roi_cov %>% 
+  filter(desc == "MYH3C3",
+         sex=="female",
+         type=="real",
+         samp_length > 6) %>% 
+  group_by(pop) %>% 
+  mutate(pop = case_when(acronym == "BOUL" ~ "Boulton Lake, Haida Gwaii, BC, Canada",
+                         pop == "Drizzle Lake, Haida Gwaii" ~ "Drizzle Lake, Haida Gwaii, BC, Canada",
+                         pop == "Friant River" ~ "Friant River, CA, USA",
+                         acronym == "GOLD" ~ "Gold Creek, Haida Gwaii, BC, Canada",
+                         acronym == "MAYR" ~ "Mayer Lake, Haida Gwaii, BC, Canada",
+                         acronym == "RDSP" ~ "Roadside Pond, Haida Gwaii, BC, Canada",
+                         pop == "Spence Lake, Haida Gwaii" ~ "Spence Lake, Haida Gwaii, BC, Canada",
+                         pop == "Spence Lake Outlet, Haida Gwaii" ~ "Spence Lake Outlet, Haida Gwaii, BC, Canada",
+                         pop == "Vifissta_avatn" ~ "Vifisstaðavatn Lake, Iceland",
+                         pop == "Wallace Lake" ~ "Wallace Lake, AK, USA",
+                         TRUE ~ pop)) %>% 
+  mutate(pop_total= n()) %>% 
+  filter(pop_total > 1, is.na(`used _river_comparisons`), acronym != "LOBG") %>% 
+  mutate(pop = factor(pop, levels = c("Friant River, CA, USA", 
+                                     "Boulton Lake, Haida Gwaii, BC, Canada",
+                                     "Spence Lake, Haida Gwaii, BC, Canada",
+                                     "Spence Lake Outlet, Haida Gwaii, BC, Canada",
+                                     "Drizzle Lake, Haida Gwaii, BC, Canada",
+                                     "Gold Creek, Haida Gwaii, BC, Canada",
+                                     "Mayer Lake, Haida Gwaii, BC, Canada",
+                                     "Roadside Pond, Haida Gwaii, BC, Canada",
+                                     "Wallace Lake, AK, USA",
+                                     "Vifisstaðavatn Lake, Iceland")))
+within_pop_plot <- multi_samp %>% 
+  ggplot(aes(pop, wg_norm_depth, color = ecotype)) +
+  geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
+  geom_beeswarm(size = 1.5, cex=2.5,alpha = 0.7) +
+  geom_boxplot(fill = NA, outlier.shape = NA) +
+  scale_color_manual(values=c("#0072b2", "#d73027")) +
+  scale_y_continuous(limits = c(0,3.2), expand = expansion(mult = c(0, 0))) +
+  xlab("Population") +
+  ylab("MYH3C3 normalized depth") +
+  theme_cowplot(8) +
+  panel_border(color="black", size=0.75) +
+    theme(legend.position = c(0.05, 0.85),
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+          plot.margin = margin(l = 30, r = 20))
+
+within_pop_plot
+```
+```{r}
+# Save figure to separate file
+ggsave(
+  "/labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/gasAcuv5_C4masked_nochrY/within_pop_depth_figure.pdf",
+  plot = within_pop_plot,
+  scale = 1,
+  width = 4,
+  height = 4,
+  units = c("in"),
+  dpi = 300,
+)
+```
+
+
+```{r fig.width=6, fig.height=4}
+# Plot MYH3C3 read depth for MAYR lake
+ga5_roi_cov %>% 
+  filter(desc == "MYH3C3",
+         sex=="female",
+         type=="real",
+         samp_length > 6) %>% 
+  group_by(pop) %>% 
+  mutate(pop_total= n()) %>% 
+  filter(pop_total >1, is.na(`used _river_comparisons`), acronym != "LOBG") %>% 
+  ggplot(aes(fct_reorder(samp, wg_norm_depth), wg_norm_depth, color = ecotype)) +
+  geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey") +
+  geom_point() +
+  scale_color_manual(values=c("#0072b2", "#d73027")) +
+  theme(axis.text.x=element_text(angle = -90, hjust = 0), legend.position = c(0.04, 0.79)) +
+  facet_grid(cols = vars(pop), scales = "free_x", space="free") +
+  xlab("Individual") +
+  ylab("Normalized MYH3C3 read depth")
+
+```
 ```{r fig.width=3, fig.height=4}
 # Plot MYH3C3 read depth for MAYR lake
 ga5_roi_cov %>% 
@@ -451,7 +538,8 @@ ga5_roi_cov_filt <- ga5_roi_cov %>%
                                 samp == "TYNE_8_2003_902" ~ "TYNE_F",
                                 TRUE ~ acronym))
 # Wilcoxon test for marine vs freshwater
-w <- wilcox.test(subset(ga5_roi_cov_filt, ecotype == "Freshwater")$wg_norm_depth, subset(ga5_roi_cov_filt, ecotype == "Marine")$wg_norm_depth, alternative = "greater")
+#w <- wilcox.test(subset(ga5_roi_cov_filt, ecotype == "Freshwater")$wg_norm_depth, subset(ga5_roi_cov_filt, ecotype == "Marine")$wg_norm_depth, alternative = "greater")
+w <- wilcox.test(subset(ga5_roi_cov_filt, ecotype == "Freshwater")$wg_norm_depth, subset(ga5_roi_cov_filt, ecotype == "Marine")$wg_norm_depth, alternative = "two.sided")
 w
 
 C3_global <- ga5_roi_cov_filt %>% 
@@ -486,7 +574,8 @@ lat <- ga5_roi_cov %>%
   geom_hline(data = sim_average, aes(yintercept = wg_norm_depth), linetype = "dashed", color = "grey", linewidth=0.25) +
   geom_point(alpha=0.7, size=1.5) +
   geom_smooth(aes(fill = ecotype), method = "lm") +
-  stat_cor(aes(color = ecotype), size=2) +
+  stat_cor(aes(color = ecotype), size=2, method = "pearson", cor.coef.name = "R") +
+ # stat_cor(aes(color = ecotype), size=2, method = "spearman", cor.coef.name = "rho") +
   scale_color_manual(values=c("#d73027","#0072b2"),) +
   scale_fill_manual(values=c("#d73027","#0072b2")) +
   scale_y_continuous(limits = c(0,3.7), expand = expansion(mult = c(0, 0))) +
@@ -551,7 +640,7 @@ final_plot
 ```
 
 ```{r}
-# Save ASE figure to separate file
+# Save figure to separate file
 ggsave(
   "/labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/gasAcuv5_C4masked_nochrY/ecotypic_depth_figure.pdf",
   plot = final_plot,
@@ -566,8 +655,11 @@ ggsave(
 ```{r}
 # Make table of samples used for figure
 fig_table <- ga5_roi_cov %>% 
-  filter(desc == "MYH3C3",  type=="real", sex=="female", NorthEurope_independent_MvsF_c151 %in% c(0,1)|PNW_independent_MvsF_c150 %in% c(0,1)|CaliforniaFreshwater_vs_AllPacificMarine_c153 %in% c(0,1)|!is.na(`used _river_comparisons`), samp_length > 6) %>%
-  mutate(Figure2B_label = case_when(samp == "BIGR_1_32_2007_03" ~ "BIGR_M",
+#  filter(desc == "MYH3C3",  type=="real", sex=="female", NorthEurope_independent_MvsF_c151 %in% c(0,1)|PNW_independent_MvsF_c150 %in% c(0,1)|CaliforniaFreshwater_vs_AllPacificMarine_c153 %in% c(0,1)|!is.na(`used _river_comparisons`), samp_length > 6) %>%
+  filter(desc == "MYH3C3",  type=="real", sex=="female", samp_length > 6) %>%
+  mutate(global_analysis = case_when(NorthEurope_independent_MvsF_c151 %in% c(0,1)|PNW_independent_MvsF_c150 %in% c(0,1)|CaliforniaFreshwater_vs_AllPacificMarine_c153 %in% c(0,1) ~ "yes",
+                                     TRUE ~ "no")) %>% 
+  mutate(Figure1B_label = case_when(samp == "BIGR_1_32_2007_03" ~ "BIGR_M",
                                 samp == "BIGR_52_54_2008_02" ~ "BIGR_F",
                                 samp == "LITC_0_05_2008_841" ~ "LITC_M",
                                 samp == "LITC_23_32_2008_306" ~ "LITC_F",
@@ -575,21 +667,25 @@ fig_table <- ga5_roi_cov %>%
                                 samp == "MIDF_REND_2011_01" ~ "MIDF_F",
                                 samp == "TYNE_1_2001_14" ~ "TYNE_M",
                                 samp == "TYNE_8_2003_902" ~ "TYNE_F",
+                                samp == "BNMA_X_2006_01" ~ "BNMA",
+                                samp == "BNST_X2006_08" ~ "BNST",
                                 !is.na(`used _river_comparisons`) ~ NA,
-                                TRUE ~ acronym),
-         analysis_group = case_when(!is.na(Figure2B_label) & !is.na(`used _river_comparisons`) ~ "Global comparison, Hybrid zone",
-                                    !is.na(Figure2B_label) ~ "Global comparison",
+                                global_analysis == "yes" ~ acronym),
+         analysis_group = case_when(global_analysis == "yes" & !is.na(`used _river_comparisons`) ~ "Global comparison, Hybrid zone",
+                                    global_analysis == "yes" & samp %in% multi_samp$samp ~ "Global comparison, Within population",
+                                    global_analysis == "yes" ~ "Global comparison",
+                                    samp %in% multi_samp$samp ~ "Within population",
                                     !is.na(`used _river_comparisons`) ~ "Hybrid zone"),
          region = case_when(PNW_independent_MvsF_c150 %in% c(0,1)|CaliforniaFreshwater_vs_AllPacificMarine_c153 %in% c(0,1) ~ "Pacific",
                            NorthEurope_independent_MvsF_c151 %in% c(0,1) ~ "Atlantic",
                            str_detect(samp, "MIDF|TYNE") ~ "Atlantic",
                            str_detect(samp, "BNMA|BNST|BIGR|LITC") ~ "Pacific"),
          wg_norm_depth = round(wg_norm_depth, digits = 3)) %>% 
-  select(samp, Figure2B_label, pop, GPS_north, GPS_east, ecotype, water_type, region, wg_norm_depth, analysis_group)
+  select(samp, Figure1B_label, pop, GPS_north, GPS_east, ecotype, water_type, wg_norm_depth, analysis_group, region, NorthEurope_independent_MvsF_c151, PNW_independent_MvsF_c150, CaliforniaFreshwater_vs_AllPacificMarine_c153)
 
 # Write table to output file
-colnames(fig_table) <- c("Sample", "Figure2B label", "Population", "GPS (North)", "GPS(East)", "Ecotype", "Water type", "Ocean basin", "MYH3C3 normalized depth", "Analysis group(s)")
-
+colnames(fig_table) <- c("Sample", "Figure1B label", "Population", "GPS (North)", "GPS (East)", "Ecotype", "Water type", "MYH3C3 normalized depth", "Analysis group(s)", "Ocean basin", "NorthEurope_independent_MvsF_c151", "PNW_independent_MvsF_c150", "CaliforniaFreshwater_vs_AllPacificMarine_c153")
+fig_table
 fig_table %>% 
   write_tsv(out_table_file)
 ```
@@ -601,6 +697,15 @@ fig_table %>%
   group_by(`Ocean basin`, Ecotype) %>% 
   summarize(n = n())
 ```
+```{r}
+# Count n in each group for global analysis
+fig_table %>% 
+  filter(str_detect(`Analysis group(s)`, "Within")) %>% 
+  group_by(Population) %>% 
+  summarize(n = n())
+```
+
+
 ```{r}
 # Count n in each group for hybrid zone analysis
 fig_table %>% 
@@ -614,6 +719,80 @@ fig_table %>%
   filter(str_detect(`Analysis group(s)`, "Global")) %>% 
   group_by()
 ```
+
+## Plot phylogenetic tree with read depth
+```{r fig.height=8, fig.width=5}
+# Read tree
+tree <- read.tree("/labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/phylogeny/subsample.eco.min4.phy.treefile")
+
+
+# Extract names from tree and standardize names for join
+metadata <- data.frame(tip=tree$tip.label) %>% 
+  mutate(Sample = str_replace_all(tip, "\\|", "_")) %>% 
+  left_join(., fig_table) 
+
+p_tree <- ggtree(tree) %<+% metadata +
+  geom_tiplab(aes(label= `Figure1B label`, color = Ecotype), size = 2, align=TRUE, linesize=.5) +
+  geom_text2(aes(
+      subset = !isTip & as.numeric(label) >= 70, label = label), hjust = 1.1, vjust = 1.2, size = 1.8) +
+#  geom_text2(aes(label = node), hjust = 1.1, vjust = 1.2, size = 2) +
+  scale_size(range = c(1, 5)) +
+  geom_treescale(x = 0.02, y = 95, width = 0.05, fontsize = 2) +
+  scale_color_manual(values = c(Freshwater="#0072b2", Marine="#d73027")) +
+  theme_tree() +
+  theme(legend.position = "none") +
+  xlim_tree(0.35) +
+  coord_cartesian(clip = "off")
+
+
+# Extract tip order from the tree
+tip_order <- p_tree$data %>%
+  dplyr::filter(isTip) %>%
+  dplyr::arrange(y) %>%
+  dplyr::pull(label)
+
+metadata$tip <- factor(metadata$tip, levels = tip_order)
+
+# Make a lollipop plot using ggplot2
+p_lollipop <- ggplot(metadata, aes(y = tip, color = Ecotype)) +
+  geom_vline(data = sim_average, aes(xintercept = wg_norm_depth), linetype = "dashed", color = "grey", linewidth=0.25) +
+  geom_segment(aes(x = 0, xend = `MYH3C3 normalized depth`), linewidth = 0.6) +
+  geom_point(
+    aes(x = `MYH3C3 normalized depth`),
+    size = 1.5
+  ) +
+  scale_color_manual(values = c(Freshwater="#0072b2", Marine="#d73027")) +
+  scale_x_continuous(limits = c(0,4), breaks = c(0, 2, 4), expand = expansion(mult = c(0, 0))) +
+  xlab("MYH3C3 normalized depth") +
+  theme_cowplot(8) +
+  panel_border(color="black", size=0.75) +
+  theme(
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    legend.position = "top"
+  )
+
+# Combine tree and lollipop plot
+p_final <- p_tree + plot_spacer() + p_lollipop +
+  plot_layout(widths = c(1.5, -0.06, 0.5))
+
+p_final
+```
+```{r}
+# Save figure to separate file
+ggsave(
+  "/labs/kingsley/ambenj/myosin_dups/analysis/ecotypic_depth/gasAcuv5_C4masked_nochrY/subsample.eco.min4.phy_depth_plot.pdf",
+  plot = p_final,
+  scale = 1,
+  width = 5,
+  height = 8,
+  units = c("in"),
+  dpi = 300,
+)
+```
+
 
 ## PCA of myosin region
 ```{r}

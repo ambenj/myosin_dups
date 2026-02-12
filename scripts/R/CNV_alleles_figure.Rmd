@@ -12,7 +12,7 @@ library(tidyverse)
 library(webshot2)
 ```
 ```{r}
-a <- read_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/assemblies/figure/combined_annotations.txt") %>% 
+a <- read_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/assemblies/figure/combined_annotations_wFragments.txt") %>% 
   mutate(start = case_when(orientation == "reverse" ~ max,
                            TRUE ~ min),
          end = case_when(orientation == "reverse" ~ min,
@@ -86,7 +86,7 @@ htmlwidgets::saveWidget(cluster_plot, "temp.html", selfcontained = TRUE)
 # Save plot to .png (or .jpg, .jpeg, .webp, .pdf)
 webshot2::webshot(
   "temp.html", 
-  "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/assemblies/figure/cluster_plot.pdf", 
+  "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/assemblies/figure/cluster_plot_wFragments.pdf", 
   zoom = 10, # Increase zoom for higher resolution
   selector = ".geneviewer")
 

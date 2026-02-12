@@ -287,13 +287,17 @@ means
 ```{r fig.height=4, fig.width=4}
 # Perform two-sided, one sample Wilcoxon test (safer to use with small n=3-10) to determine if sample is significantly greater than 0
 test_results_mean <- means %>%
+#  filter(Temperature == "18C") %>% 
   group_by(Temperature, source, Tissue_type) %>%
   summarize(
     n = sum(!is.na(mean_prop_BEPA)),
+    shapiro_p = shapiro.test(mean_prop_BEPA)$p.value,
     p_value = if (n >= 3) wilcox.test(mean_prop_BEPA, mu = 0.5)$p.value else NA_real_,
     .groups = "drop"
   ) %>%
   mutate(
+#    HG_p_value_corr = p.adjust(p_value, method = "holm"),
+    HG_p_value_corr = p.adjust(p_value, method = "fdr"),
     significance = case_when(
       is.na(p_value)     ~ NA_character_,
       p_value <= 0.001   ~ "***",
@@ -316,10 +320,11 @@ test_results_means <- left_join(test_results_mean, label_positions_means,
 ase_means_temp_plot <- means %>% 
   ggplot(aes(Tissue_type, mean_prop_BEPA, color = Temperature)) +
   geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_hline(yintercept = 0.75, linetype = "dashed", color = "#cccccc") +
   geom_boxplot(fill = NA, outlier.shape = NA) +
   geom_beeswarm(cex=2, dodge.width = .7, alpha = 0.7, size=2) +
   scale_color_manual(values = c("black", "grey60")) +
-  scale_y_continuous(labels = percent, limits=c(0.45, 0.75)) +
+  scale_y_continuous(labels = percent, breaks = seq(0.45, 0.78, by = 0.05), limits = c(0.45, 0.78)) +
   facet_grid(cols = vars(source), scales = "free_x", space = "free") +
   geom_text(
     data = test_results_means %>% filter(!is.na(significance)),
@@ -332,7 +337,6 @@ ase_means_temp_plot <- means %>%
   panel_border(color="black", size=0.75) +
   scale_x_discrete(labels = label_wrap(10)) +
   theme(legend.position = "top") +
-#  ylim(0.45, 0.75) +
   xlab("Tissue") +
   ylab("Percent BEPA allele expression")
 ase_means_temp_plot
@@ -343,11 +347,12 @@ ase_means_plot <- means %>%
     filter(Temperature == "18C") %>% 
   ggplot(aes(Tissue_type, mean_prop_BEPA, color = source, fill=source)) +
   geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_hline(yintercept = 0.75, linetype = "dashed", color = "#cccccc") +
   geom_boxplot(fill = NA, outlier.shape = NA) +
   geom_beeswarm(cex=2, dodge.width = .7, alpha = 0.7, size=2, shape=21) +
   scale_fill_manual(values = c("#f0e442", "#009e73")) +
   scale_color_manual(values = c("#c6ba10", "#009e73")) +
-  scale_y_continuous(labels = percent) +
+  scale_y_continuous(labels = percent, breaks = seq(0.45, 0.77, by = 0.05)) +
   facet_grid(cols = vars(source), scales = "free_x", space = "free") +
   geom_text(
     data = test_results_means %>% filter(!is.na(significance), Temperature == "18C"),
@@ -792,6 +797,7 @@ k_C3_temp_plot <- k %>%
                      breaks = seq(0, 1, by = 0.1),
                      labels = percent) +
   geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_hline(yintercept = 0.75, linetype = "dashed", color = "#cccccc") +
   theme_cowplot(7) +
 #  panel_border(color="black", size=0.75) +
   theme(axis.text.x = element_blank(),
@@ -818,6 +824,7 @@ k_C3_plot <- k %>%
                      breaks = seq(0, 1, by = 0.1),
                      labels = percent) +
   geom_hline(yintercept = 0.5, linetype = "dashed") +
+  geom_hline(yintercept = 0.75, linetype = "dashed", color = "#cccccc") +
   theme_cowplot(7) +
 #  panel_border(color="black", size=0.75) +
   theme(axis.text.x = element_blank(),

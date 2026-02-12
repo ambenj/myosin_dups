@@ -308,7 +308,8 @@ MF_aa_HG <- MF_aa %>%
   mutate(MF_total = sum(MF_by_domain),
          pos_total = 1931) %>% 
   left_join(., select(mutate(domain_df, length = End - Start), Domain, length)) %>% 
-  mutate(HG_p_value = phyper(MF_by_domain-1, length, pos_total-length, MF_total, lower.tail = FALSE))
+  mutate(HG_p_value = phyper(MF_by_domain-1, length, pos_total-length, MF_total, lower.tail = FALSE),
+         HG_p_value_corr = p.adjust(HG_p_value, method = "holm"))
 
 MF_aa_HG
 
@@ -325,7 +326,8 @@ MF_aa %>%
   mutate(MF_total = sum(MF_by_domain),
          pos_total = 1931) %>% 
   left_join(., select(mutate(domain_df, length = End - Start), Domain, length)) %>% 
-  mutate(HG_p_value = phyper(MF_by_domain-1, length, pos_total-length, MF_total, lower.tail = FALSE))
+  mutate(HG_p_value = phyper(MF_by_domain-1, length, pos_total-length, MF_total, lower.tail = FALSE),
+         HG_p_value_corr = p.adjust(HG_p_value, method = "holm"))
 ```
 
 # Calculate dN/dS

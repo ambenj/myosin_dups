@@ -264,6 +264,8 @@ af %>%
 ```
 
 
+
+
 ## Final plots
 ```{r}
 depth_plot <- roi_cov %>% 
@@ -286,17 +288,30 @@ depth_plot
 # Mann-Kendall test for CH read depth
 mk_CH <- mk.test(pull(filter(roi_cov, pop == "CH", desc=="MYH3C3"), chrXIX_norm_depth), alternative = "greater" )
 mk_CH
+
+mk_CH_two_sided <- mk.test(pull(filter(roi_cov, pop == "CH", desc=="MYH3C3"), chrXIX_norm_depth), alternative = "two.sided" )
+mk_CH_two_sided
 ```
 ```{r}
 # Mann-Kendall test for SC read depth
 mk_SC <- mk.test(pull(filter(roi_cov, pop == "SC", desc=="MYH3C3"), chrXIX_norm_depth), alternative = "greater")
 mk_SC
-mk_SC$p.value
+
+mk_SC_two_sided <- mk.test(pull(filter(roi_cov, pop == "SC", desc=="MYH3C3"), chrXIX_norm_depth), alternative = "two.sided")
+mk_SC_two_sided
 ```
 ```{r}
 # Mann-Kendall test for LB read depth
 mk_LB <- mk.test(pull(filter(roi_cov, pop == "LB", desc=="MYH3C3"), chrXIX_norm_depth), alternative = "greater" )
 mk_LB
+
+mk_LB_two_sided <- mk.test(pull(filter(roi_cov, pop == "LB", desc=="MYH3C3"), chrXIX_norm_depth), alternative = "two.sided" )
+mk_LB_two_sided
+```
+```{r}
+filter(af, pos == 2744769, ref_af > 0.3)
+# CH = 30.1% at 6 years since founding
+# SC at 34.4% at 6 years since founding
 ```
 
 

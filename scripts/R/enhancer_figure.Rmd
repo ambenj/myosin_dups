@@ -1,7 +1,11 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "GFP intensity for enhancer transgenic fish"
+output:
+  html_document:
+    df_print: paged
 ---
+
+Code run with R 4.5.1
 
 ```{r}
 library(tidyverse); theme_set(theme_bw())
@@ -17,14 +21,16 @@ out_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/enhancer_assay/en
 ```
 
 ```{r}
+# Read input file
 gfp <- read_tsv(gfp_file) %>% 
   mutate(Type = fct_relevel(Type, "Control", "SALR", "BEPA"))
 gfp
 ```
 ```{r}
+# Prepare comparisons for statistical test
 my_comparisons <- list( c("Control", "SALR"), c("Control", "BEPA"), c("SALR", "BEPA") )
-#my_comparisons <- list( c("Control", "SALR"), c("SALR", "BEPA"), c("Control", "BEPA") )
 
+# Plot gfp intensity
 final_plot <- gfp %>% 
   ggplot(aes(Type, Normalized, color = Type)) +
   geom_beeswarm(cex=3, dodge.width = .5, alpha = 0.7) +
@@ -38,6 +44,7 @@ final_plot <- gfp %>%
 final_plot
 ```
 ```{r}
+# Write plot to file
 ggsave(
   out_file,
   plot = final_plot,

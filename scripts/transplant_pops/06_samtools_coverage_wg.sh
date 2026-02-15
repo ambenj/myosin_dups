@@ -26,5 +26,4 @@ mkdir -p $OUTDIR
 printf "chr\tstartpos\tendpos\tnumreads\tcovbases\tcoverage\tmeandepth\tmeanbaseq\tmeanmapq\n" > $OUT_FILE
 
 # Get coverage for whole genome
-#samtools coverage -H -q 30 --ff 260 $BAM >> $OUT_FILE
 samtools coverage -H -q 3 --ff 260 $BAM >> $OUT_FILE

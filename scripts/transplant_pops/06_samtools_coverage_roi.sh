@@ -30,7 +30,6 @@ printf "desc\tregion\tchr\tstartpos\tendpos\tnumreads\tcovbases\tcoverage\tmeand
 while IFS=$'\t' read -r -a region_list
 do
 	region="${region_list[0]}:${region_list[1]}-${region_list[2]}"
-#	result=$(samtools coverage -H -q 30 --ff 260 -r $region $BAM)
 	result=$(samtools coverage -H -q 3 --ff 260 -r $region $BAM)
 	printf "${region_list[3]}\t${region}\t${result}\t${BAM}\n" >> $OUT_FILE
  

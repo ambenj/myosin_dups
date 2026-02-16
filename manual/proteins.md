@@ -11,7 +11,7 @@
 * Edited alignment file so that position of frameshift is represented by a “&” and all following positions are “-”
 
 Get divergent sequences:
-```
+```bash
 python3 scripts/protein_seqs/get_divergent_pos.py -i analysis/protein_msa/all_FSmod_mafft_align.fasta -o analysis/protein_msa/all_protein_FSmod_mafft_aligndivergent_sites.tsv
 ```
 

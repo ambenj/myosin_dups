@@ -10,22 +10,22 @@
 We used the transplant pool-seq dataset described in Roberts Kingman et al. (2021) which was mapped to *gasAcu1-4*. Unmapped reads can also be found at NCBI SRA: PRJNA671824.
 
 Index *stickleback v. 5* reference genome (with masked duplication region 2):
-```
+```bash
 sbatch 00_index_gasAcu5_C4masked.sh 
 ```
 
 Split bams by read group:
-```
+```bash
 for i in /labs/kingsley/ambenj/myosin/transplant_poolseq_depth/gasAcuv5_C4masked/original_bams/*.bam; do sbatch 01_split_bamRG.sh ${i}; done
 ```
 
 Realign bams to *stickleback v. 5* reference genome (with masked duplication region 2):
-```
+```bash
 for i in 01_split_bams/*.bam; do sbatch 02_realign.sh $i; done
 ```
 
 Assign read groups and mark duplicates:
-```
+```bash
 # Start interactive session
 sdev
 
@@ -43,18 +43,18 @@ mkdir 03_markdups_addRG
 bash 03_mark_dups_add_rgs_transplant_poolseq.sh
 ```
 Merge separate read group files into one per sample:
-```
+```bash
 # Merge bams
 for i in original_bams/*.bam; do FILE=${i##*/}; BASE=${FILE%.bam}; sbatch 04_merge_bams.sh $BASE; done
 ```
 Mark duplicates and index:
-```
+```bash
 for i in 04_merge_bams/*.bam; do sbatch 05_mkdup_index.sh $i; done
 ```
 
 ## Read depth analysis
 Calculate read depth in regions of interest (i.e. *MYH3C* region):
-```
+```bash
 # Calculate roi read depth for each sample
 for i in 05_mkdup_index/*.bam; do sbatch 06_samtools_coverage_roi.sh $i /labs/kingsley/ambenj/ref_genomes/Nath2020_sticklebackv5/annotations/stickleback_v5_myosin_manual_annotations_v2.bed 06_samtools_coverage_roi; done
 
@@ -65,7 +65,7 @@ for f in *mapq3_roi_coverage.txt; do tail -n +2 $f >> roi_coverage_mapq3.txt; do
 ```
 
 Calculate read depth for whole genome:
-```
+```bash
 for i in 05_mkdup_index/*.bam; do sbatch 06_samtools_coverage_wg.sh $i 06_samtools_coverage_wg; done
 ```
 

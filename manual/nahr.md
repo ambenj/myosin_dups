@@ -4,7 +4,7 @@
 **Relevant Figures**: Figure 5C
 
 Extract divergent positions from alignment:
-```
+```bash
 python3 scripts/protein_seqs/get_divergent_pos.py -i analysis/nahr_analysis/5-6-copy_dup_mafft_alignment_no_gaps.fasta -o analysis/nahr_analysis/5-6-copy_dup_nogaps_divergent_sites.txt
 ```
 

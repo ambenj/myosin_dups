@@ -4,7 +4,7 @@
 **Relevant Figure**: Figure 2B
 
 Run phylogenetic analysis on CDS nucleotide alignment (MAFFT):
-```
+```bash
 # Load iqtree (IQ-TREE multicore version 2.3.6)
 conda activate tree
 

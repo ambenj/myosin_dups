@@ -168,33 +168,33 @@ Source files:
 * Text file with names of samples in Table S1 global comparison group: `file_names.txt`
 
 Combine EcoPeak files and remove extraneous data:
-```
+```bash
 cat c150.sensitive.50kb.final.peaks c155.sensitive.50kb.final.peaks | cut -f1-3 - | sort -k1,1 -k2,2n - | bedtools merge -i - > combined_ecopeaks.bed
 ```
 
 Make vcf subset with only selected samples and with MAF > 0.02:
-```
+```bash
 bcftools view 227_genomes.final.filtered.vcf -S file_names.txt -i 'MAF>=0.02' -o subset_samples.vcf 
 ```
 
 Define EcoPeak exclusion regions (5 Mb exclusion from any EcoPeak):
-```
+```bash
 bedtools slop -i combined_ecopeaks.bed -b 5000000 -g  gasAcu1-4.fa.fai | bedtools merge -i - > eco_exclusion.bed
 bedtools intersect -v -header -a subset_samples.vcf -b eco_exclusion.bed > eco_exclusion.vcf
 ```
 
 Randomly subsample to 100k SNPs:
-``` 
+``` bash
 bcftools view -H eco_exclusion.vcf | shuf -n 100000 - > eco.tmp.vcf
 bcftools view -h eco_exclusion.vcf | cat - eco.tmp.vcf > subsample.eco.vcf
 ```
 Convert from VCF to PHYLIP (vcf2phylip by Ortiz 2019):
-```
+```bash
 python3 vcf2phylip.py -i subsample.eco.vcf -o eco.100k.phy
 ```
 
 Build tree (iqtree by Wong et al 2025 and Minh et al 2020):
-```
+```bash
 iqtree3 -s subsample.eco.min4.phy -m GTR+G -nt AUTO -bb 1000
 ```
 ## Normalize read depth and plot results

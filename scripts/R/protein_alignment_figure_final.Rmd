@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Protein sequence analysis"
 output:
   html_document:
     df_print: paged
@@ -13,7 +13,6 @@ library(tidyverse)
 library(readr)
 library(patchwork)
 library(fuzzyjoin)
-library(seqinr)
 ```
 
 ```{r fig.width=8, fig.height=3}
@@ -22,7 +21,6 @@ library(seqinr)
 # --- USER INPUT ---
 ref_name <- "BEPA-C3A"
 input_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/all_protein_FSmod_mafft_aligndivergent_sites_del_added.txt"
-#input_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/divergent_sites.tsv"
 domains_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/BEPA_XAB031_MYH3C3a_domains.txt"
 group_names <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/group_names.txt"
 out_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/all_protein_FSmod_mafft_aligndivergent_sites_figure.pdf"
@@ -31,10 +29,10 @@ out_file <- "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/all_p
 # Define protein domains (relative to full protein)
 domain_df <- read_tsv(domains_file) %>% 
   mutate(TileColor = case_when(
-    Domain == "SH3" ~ "#EBDFCC",
-    Domain == "Myosin motor" ~ "#FCF9ED",
-    Domain == "IQ motif" ~ "#A9A8AD",
-    Domain == "Myosin tail" ~ "#D9CECC",
+    Domain == "SH3" ~ "#eeeeee",
+    Domain == "Myosin motor" ~ "#eeeeee",
+    Domain == "IQ motif" ~ "#eeeeee",
+    Domain == "Myosin tail" ~ "#eeeeee",
     TRUE ~ NA_character_
   ))
 
@@ -69,9 +67,6 @@ comparison_df <- long_df %>%
                              Sequence),
          seq_names = paste(unique(Sequence), collapse = ",")) %>%
   ungroup()
-
-comparison_df
-
 
 # Add reference info
 ref_profile <- data.frame(
@@ -112,7 +107,6 @@ long_df <- long_df %>%
                                  IsGap ~ "",
                                  Sequence == ref_name | IsDifferent ~ AminoAcid,
                                  TRUE ~ AminoAcid),
-#    DisplayAminoAcid = ifelse(Sequence == ref_name | IsDifferent, AminoAcid, ""),
     TileCategory = case_when(
       IsGap ~ "gap",
       IsStop ~ "stop",
@@ -192,7 +186,6 @@ domain_plot <- ggplot() +
 # Heatmap plot
 heatmap_plot <- ggplot(filter(long_df, New_GroupLabel!="Reference"), aes(x = factor(Position), y = reorder(New_GroupLabel, Order), fill = TileColor)) +
   geom_tile(color = NA) +
-#  geom_text(aes(label = DisplayAminoAcid, color = IsDifferent), ,na.rm = TRUE, size=1.8) +
   geom_text(aes(label = DisplayAminoAcid2, color = IsDifferent), ,na.rm = TRUE, size=1.8) +
   scale_color_manual(values=c("grey30", "white")) +
   scale_fill_identity(na.value = "white") +
@@ -205,7 +198,6 @@ heatmap_plot <- ggplot(filter(long_df, New_GroupLabel!="Reference"), aes(x = fac
     panel.grid = element_blank(),
     plot.margin = margin(0, 0, 0, 0),
     legend.position="none"
-#    plot.margin = margin(5, 10, 10, 10)
   ) +
   labs(y = "Sequence ID")
 
@@ -220,18 +212,7 @@ print(full_plot)
 ggsave(out_file, full_plot, width = 6.5, height = 2.2, units = "in")
 
 ```
-Changes:
-- represent frameshifts with a different symbol and set all positions following frameshifts to gaps
-  BLAU C3d, fGasAcu3 C3b, BEPA C3y
-- change names of sequence IDs to something more digestable
-- reorder sequences by C1, C2 C3, marine, fresh, chrXIX
 
-```{r}
-comparison_df %>% 
-  select(GroupLabel, seq_names) %>% 
-  distinct() %>% 
-  write_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/identical_sequences.txt")
-```
 
 ```{r}
 # Get C1 freshwater/marine divergent aa
@@ -274,6 +255,7 @@ C3_MF
 ```
 
 ```{r}
+# Combine and categorize aa change types
 MF_aa <- rbind(C1_MF, C2_MF, C3_MF) %>% 
     mutate(mar_type = case_when(mar_aa %in% c("R", "H", "K") ~ "positive charge",
                               mar_aa %in% c("D", "E") ~ "negative charge",
@@ -294,8 +276,9 @@ MF_aa
 ```
 
 ```{r}
+# Write aa changes to table
 MF_aa %>% 
-write_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/Mar_FW_divergent_aa.txt")
+  write_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/Mar_FW_divergent_aa.txt")
 ```
 
 
@@ -317,67 +300,5 @@ MF_aa_HG
 # Number of "successes" in population": length
 # Number of "failures" in the population
 # Number of draws
-```
-```{r}
-# Perform hypergeometric test for enrichment changes in C1, C2, and C3
-MF_aa %>% 
-  group_by(Domain) %>% 
-  summarise(MF_by_domain = n(), .groups = "drop") %>% 
-  mutate(MF_total = sum(MF_by_domain),
-         pos_total = 1931) %>% 
-  left_join(., select(mutate(domain_df, length = End - Start), Domain, length)) %>% 
-  mutate(HG_p_value = phyper(MF_by_domain-1, length, pos_total-length, MF_total, lower.tail = FALSE),
-         HG_p_value_corr = p.adjust(HG_p_value, method = "holm"))
-```
-
-# Calculate dN/dS
-```{r}
-# Read codon-aligned sequences
-alignment <- read.alignment(file = "/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/All_CDS_w3outgroups_translation_alignment.fasta", format = "fasta", forceToLower = FALSE)
-
-n <- alignment_all$nb
-
-results <- data.frame()
-
-for (i in 1:(n - 1)) {
-  for (j in (i + 1):n) {
-    aln_pair <- list(
-      nb = 2,
-      nam = alignment_all$nam[c(i, j)],
-      seq = alignment_all$seq[c(i, j)],
-      com = ""
-    )
-    class(aln_pair) <- "alignment"
-    
-    result <- kaks(aln_pair)
-    ka <- result$ka
-    ks <- result$ks
-    ka_ks <- if (ks == 0) NA else ka / ks
-    
-    results <- rbind(results, data.frame(
-      seq1 = alignment_all$nam[i],
-      seq2 = alignment_all$nam[j],
-      ka = ka,
-      ks = ks,
-      ka_ks = ka_ks
-    ))
-  }
-}
-
-print(results)
-```
-
-```{r}
-results %>% 
-  mutate(ka_ks = if_else(ka_ks > 0, ka_ks, NA)) %>% 
-  arrange(-ka_ks) %>% 
-  write_tsv("/Volumes/lab_kingsley/ambenj/myosin_dups/analysis/protein_msa/All_CDS_w3outgroups_translation_alignment_kaks.txt")
-```
-
-```{r}
-results %>% 
-  filter(str_detect(seq1, "BEPA|RABS"), str_detect(seq2, "BEPA|RABS")) %>% 
-  mutate(ka_ks = if_else(ka_ks > 0, ka_ks, NA)) %>% 
-  arrange(-ka_ks)
 ```
 

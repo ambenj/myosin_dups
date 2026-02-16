@@ -17,7 +17,6 @@ OUTDIR=$2
 # Get name for output file
 FILE=${BAM##*/}
 BASE=${FILE%.bam}
-#OUT_FILE="${OUTDIR}/${BASE}_mapq30_wg_coverage.txt" 
 OUT_FILE="${OUTDIR}/${BASE}_mapq3_wg_coverage.txt"
 
 # Make out directory if it does not exist

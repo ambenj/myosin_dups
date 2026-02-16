@@ -9,7 +9,7 @@
 ## Process and map reads
 We used the transplant pool-seq dataset described in Roberts Kingman et al. (2021) which was mapped to *gasAcu1-4*. Unmapped reads can also be found at NCBI SRA: PRJNA671824.
 
-Index *stickleback v. 5* reference genome (with masked duplication region 2)
+Index *stickleback v. 5* reference genome (with masked duplication region 2):
 ```
 sbatch 00_index_gasAcu5_C4masked.sh 
 ```
@@ -24,7 +24,7 @@ Realign bams to *stickleback v. 5* reference genome (with masked duplication reg
 for i in 01_split_bams/*.bam; do sbatch 02_realign.sh $i; done
 ```
 
-Assign read groups and mark duplicates
+Assign read groups and mark duplicates:
 ```
 # Start interactive session
 sdev
@@ -36,7 +36,7 @@ for i in 01_split_bams/*.bam; do printf $i; printf "\t"; samtools view -H $i | g
 # Prepare commands for individual jobs
 python2 03_mark_dups_add_rgs.py transplant_poolseq_read_group_data.txt > 03_mark_dups_add_rgs_transplant_poolseq.sh
 
-# make output folder
+# Make output folder
 mkdir 03_markdups_addRG
 
 # Run mark duplicates and assign read groups

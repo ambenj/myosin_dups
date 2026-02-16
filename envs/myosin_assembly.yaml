@@ -1,0 +1,11 @@
+name: myosin_assembly
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - samtools=1.19
+  - blat=35
+  - hifiasm=0.25.0
+  - canu=2.3
+  - pbmm2=1.17.0

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=canu
 #SBATCH --mem=64G
-#SBATCH --time=2-0:00:00
+#SBATCH --time=5-0:00:00
 #SBATCH --cpus-per-task=4
 #SBATCH --account=kingsley
 

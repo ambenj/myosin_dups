@@ -1,0 +1,9 @@
+name: myosin_annotate
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - liftoff=1.6.3
+  - agat=1.4.2
+  - gtfsort=0.2.2

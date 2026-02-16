@@ -24,10 +24,8 @@ a
 ```{r}
 wong_palette <- c("#000000", "#e69f00", "#56b4e9", "#009e73", "#f0e442", "#0072b2", "#d55e00", "#cc79a7")
 custom_colors <- c("#d9d9d9", "#e69f00", "#f0e442", "#009e73","#d9d9d9", "#d9d9d9", "#d9d9d9", "#d9d9d9","#d9d9d9","#d9d9d9", "#d9d9d9", "#d9d9d9")
-#new red#d73027
 
 cluster_plot <- a %>% 
-#  filter(!str_detect(gene, "nlrc5|LOC")) %>% 
 GC_chart(start = "start", 
          end = "end", 
          group = "gene", 
@@ -65,7 +63,6 @@ GC_chart(start = "start",
         list(c(98602, 10), c(116227, 90)),
         list(c(116228, 10), c(133886, 90))),
     style = list(stroke ="black", strokeWidth = 1)) %>% 
-#  GC_genes(marker = "boxarrow", marker_size = "small") %>%
   GC_scale(axis_type = "range", hidden=TRUE) %>% 
   GC_scaleBar(title = "20kb", scaleBarUnit = 20000, cluster=5)  %>%
   GC_labels("gene_labels", fontSize=9, adjustLabels = TRUE, y = 6) %>%
@@ -74,7 +71,6 @@ GC_chart(start = "start",
   GC_color(customColors = custom_colors)
 
 cluster_plot
-?GC_annotation
 ```
 
 

@@ -1,0 +1,7 @@
+name: pyGenomeTracks
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - pygenometracks=3.9

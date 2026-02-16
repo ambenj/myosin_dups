@@ -199,6 +199,6 @@ iqtree3 -s subsample.eco.min4.phy -m GTR+G -nt AUTO -bb 1000
 ```
 ## Normalize read depth and plot results
 
-Normalize read depths; plot read depths and allele frequencies:  
+Normalize and plot read depths::  
 &nbsp;&nbsp;&nbsp;&nbsp;R notebook: [scripts/R/ecotypic_read_depth_sticklebackv5_noChrY_final.Rmd](../scripts/R/ecotypic_read_depth_sticklebackv5_noChrY_final.Rmd)  
 &nbsp;&nbsp;&nbsp;&nbsp;Html output: [scripts/R/ecotypic_read_depth_sticklebackv5_noChrY_final.html](../scripts/R/ecotypic_read_depth_sticklebackv5_noChrY_final.html)

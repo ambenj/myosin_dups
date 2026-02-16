@@ -2,7 +2,9 @@
 title: "Myosin coverage - 206 genomes with mapq3 filter"
 author: "Alyssa Yoxsimer"
 date: "4/9/24"
-output: html_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}

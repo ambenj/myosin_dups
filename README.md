@@ -1,4 +1,5 @@
 # Rapid and repeated evolution of myosin copy number in threespine stickleback
+[![DOI](https://zenodo.org/badge/992221541.svg)](https://doi.org/10.5281/zenodo.18666765)
 
 This repository contains the code used for following paper:
 

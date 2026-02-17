@@ -3,4 +3,6 @@ raw/
 slurm*
 scripts/assemblies/unused
 .snakemake/*
-scripts/*/old
+scripts/*/old/*
+scripts/ASE/unused/
+scripts/genbank/*

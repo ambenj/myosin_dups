@@ -5,7 +5,7 @@
 **Relevant Figure**: Figure 1A
 
 ## Liftover annotations to *stickleback v.5* reference
-Liftover EcoPeaks from gasAcu1-4 to stickleback v5:
+Liftover EcoPeaks from *gasAcu1-4* to *stickleback v.5*:
 ```
 sbatch scripts/genome_tracks/liftover.sh
 ```

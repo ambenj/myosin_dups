@@ -13,7 +13,7 @@ Detailed instructions and commands for analysis are available as listed below:
 |[Genome tracks](manual/genometracks.md)|Figure 1A| Methods for lifting over annotations and visualizing genome tracks|
 |[Ecotypic depth](manual/ecotypic_depth.md)|Figures 1B-D<br>Figure S1<br>Figure S2<br>Table S1| Methods for generating simulated data, mapping short read data, and analyzing read depth in global stickleback populations|
 |[Transplant pool-seq](manual/poolseq.md)|Figures 1E-F<br>Figure S3|Methods for mapping short read pool-seq data and analyzing read depth in transplant stickleback populations|
-| [Assemblies](manual/assemblies.md) | Figure 2A<br>Table S2 | Methods for *de novo* genome assembly from long reads and evaluation of assembly quality |
+|[Assemblies](manual/assemblies.md) | Figure 2A<br>Table S2 | Methods for *de novo* genome assembly from long reads and evaluation of assembly quality |
 |[Myosin phylogeny](manual/phylogeny.md)|Figure 2B| Methods for phylogenetic analysis of *MYH3C* genes|
 |[Protein analysis](manual/proteins.md)|Figure 2C<br>Table S3| Methods for protein sequence analysis|
 |[Allele-specific expression](manual/ase.md)|Figure 3<br>Figure S6<br>Table S4|Methods for processing RNA-seq and Kinnex reads and evaluating allele-specific expression|

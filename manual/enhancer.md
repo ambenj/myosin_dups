@@ -4,7 +4,7 @@
 **Relevant Figure**: Figure 4
 
 ## Adjust color and brighness in images
-Apply identical brightness and contrast shifts to images shown in Figure 4B
+Apply identical brightness and contrast shifts to images shown in Figure 4B:
 ```
 sbatch scripts/enhancer/adjust_brightness_contrast.sh
 ```

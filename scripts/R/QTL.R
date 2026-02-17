@@ -17,7 +17,7 @@ est = est.rf(myh)
 genp = calc.genoprob(myh, step=0)
 
 # genomic scan using single QTL model
-out.norm=scanone(genp, pheno.col=2, model='normal', upper=TRUE)
+out.norm=scanone(genp, pheno.col=1, model='normal', upper=TRUE)
 
 sorted = out.norm[order(as.numeric(as.character(out.norm$chr))),]
 

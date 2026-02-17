@@ -7,7 +7,7 @@
 * Table S4
 
 ## RNA-seq preprocessing and *k*-mer counting
-BLAT kmers to RABS reference to check for off-targets and variants
+BLAT kmers to RABS reference to check for off-targets and variants:
 ```bash
 # BLAT kmers to new RABS reference
 sbatch scripts/ASE/blat.sh /labs/kingsley/ambenj/myosin_dups/analysis/assemblies/RABS_Duke_GAcu_1.0/GCA_046562415.1_Duke_GAcu_1.0_genomic.fasta analysis/ase/kmer_analysis/MYH_BEPA_RABS_27mers.fasta analysis/ase/kmer_analysis/blat/MYH_BEPA_RABS_27mers_RABSblat

@@ -61,7 +61,7 @@ sbatch scripts/assemblies/blat.sh /labs/kingsley/ambenj/myosin_dups/analysis/ass
 sbatch scripts/assemblies/blat.sh /labs/kingsley/ambenj/myosin_dups/analysis/assemblies/Storvatnet_spineless/canu/Storvatnet_spineless/Storvatnet_spineless.contigs.fasta
 ```
 
-### Local MYH3C region assembly
+### Local *MYH3C* region assembly
 Try mapping reads to BLAU and performing local *MYH3C* region assembly:
 ```bash
 # Map reads to BLAU
@@ -97,7 +97,7 @@ sbatch scripts/assemblies/blat.sh /labs/kingsley/ambenj/myosin_dups/analysis/ass
 ```
 
 ### Local *MYH3C* region assembly
-Try mapping reads to stickleback v.5 and performing local *MYH3C* assembly
+Try mapping reads to stickleback v.5 and performing local *MYH3C* assembly:
 ```bash
 # Index freshwater reference genome with subread setting to use for multiple alignments
 sbatch scripts/assemblies/pbmm2_index.sh /labs/kingsley/ambenj/ref_genomes/Nath2020_sticklebackv5/stickleback_v5_assembly.fa SUBREAD
